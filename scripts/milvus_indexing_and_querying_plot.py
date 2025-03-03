@@ -72,7 +72,7 @@ def parse_blocks_results(dataset, version):
     
     return blocks_indexing, blocks_querying
 
-def plot_comparison(milvus, blocks, title, ylabel, dest, phase, version):
+def plot_comparison(milvus, blocks, title, ylabel, dest, phase, version, dataset):
     configs = sorted(set(milvus.keys()) & set(blocks.keys()), key=lambda x: tuple(map(int, x.split("_"))))
     
     milvus_means = [statistics.mean(milvus[c]) for c in configs]
@@ -92,7 +92,7 @@ def plot_comparison(milvus, blocks, title, ylabel, dest, phase, version):
     plt.legend()
     plt.tight_layout()
     if dest:
-        plt.savefig(f"{dest}_milvus_vs_blocks_{phase}_version_{version}.png")
+        plt.savefig(f"{dest}/milvus_vs_blocks_{dataset}_{phase}_version_{version}.png")
     else:
         plt.show()
     
@@ -107,8 +107,8 @@ def main():
     for dataset in args.datasets:
         milvus_indexing, milvus_querying = parse_milvus_results(dataset)
         blocks_indexing, blocks_querying = parse_blocks_results(dataset, int(args.version))
-        plot_comparison(milvus_indexing, blocks_indexing, f"Indexing {dataset}", "Avg Indexing Time (s)", args.plot_export_dest, "indexing", args.version)
-        plot_comparison(milvus_querying, blocks_querying, f"Querying {dataset}", "Avg Querying Time (s)", args.plot_export_dest, "querying", args.version)
+        plot_comparison(milvus_indexing, blocks_indexing, f"Indexing {dataset}", "Avg Indexing Time (s)", args.plot_export_dest, "indexing", args.version, dataset)
+        plot_comparison(milvus_querying, blocks_querying, f"Querying {dataset}", "Avg Querying Time (s)", args.plot_export_dest, "querying", args.version, dataset)
 
 if __name__ == "__main__":
     main()

@@ -81,7 +81,7 @@ for dataset in datasets:
         ax.legend()
         plt.tight_layout()
         if args.plot_export_dest:
-            plt.savefig(f"{args.plot_export_dest}/reakdown_query_{dataset}_{args.version}.png")
+            plt.savefig(f"{args.plot_export_dest}/breakdown_query_{dataset}_{args.version}.png")
         else:
             plt.show()
 
