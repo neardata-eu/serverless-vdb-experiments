@@ -1,22 +1,20 @@
-import docker
 import time
 import csv
 import matplotlib.pyplot as plt
 import json
 
 # Configuration
-CONTAINER_NAME = "potato"  # Replace with your container name
-LOG_FILE = "gist_8qf.csv"
+CONTAINER_NAME = "milvus-standalone"  # Replace with your container name
+LOG_FILE = "resource_usage_milvus_8qf_ec2.csv"
 DURATION = 300  # Total monitoring duration in seconds
 
-# Initialize Docker client
-client = docker.from_env()
-
 def log_stats():
+    import docker
+    client = docker.from_env()
     """Streams real-time CPU and memory usage using Docker SDK and logs it to a file."""
     container = client.containers.get(CONTAINER_NAME)
 
-    with open(LOG_FILE, mode="w", newline="") as file:
+    with open(f"../results/{LOG_FILE}", mode="w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(["Timestamp", "CPU_Usage(%)", "Memory_Usage(MB)"])
 
@@ -48,7 +46,7 @@ def plot_data():
     """Reads logged data and generates a dual-axis plot."""
     timestamps, cpu_usages, mem_usages = [], [], []
 
-    with open(LOG_FILE, mode="r") as file:
+    with open(f"../results/{LOG_FILE}", mode="r") as file:
         reader = csv.reader(file)
         next(reader)  # Skip header
         for row in reader:
