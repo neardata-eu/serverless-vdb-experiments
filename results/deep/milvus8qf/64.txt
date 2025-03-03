@@ -1,0 +1,6 @@
+Finish loading the entire dataset into VectorDB, insert_duration=2011.8221433910650, optimize_duration=591.278356607 load_duration(insert + optimize) = 2603.1005
+SpawnProcess-1:1 search entire test_data: cost=4.6143s, queries=1000, avg_recall=0.9938, avg_ndcg=0.9941,avg_latency=0.0045, p99=0.0056
+SpawnProcess-1:1 search entire test_data: cost=4.4484s, queries=1000, avg_recall=0.9938, avg_ndcg=0.9941,avg_latency=0.0044, p99=0.0055
+SpawnProcess-1:1 search entire test_data: cost=4.4048s, queries=1000, avg_recall=0.9938, avg_ndcg=0.9941,avg_latency=0.0044, p99=0.0053
+SpawnProcess-1:1 search entire test_data: cost=4.4229s, queries=1000, avg_recall=0.9938, avg_ndcg=0.9941,avg_latency=0.0044, p99=0.0053
+SpawnProcess-1:1 search entire test_data: cost=4.4081s, queries=1000, avg_recall=0.9938, avg_ndcg=0.9941,avg_latency=0.0044, p99=0.0054

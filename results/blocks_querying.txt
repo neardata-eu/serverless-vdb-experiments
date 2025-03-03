@@ -1,0 +1,26 @@
+EXPERIMENT:
+    Querying with blocks implementation
+
+RESOURCES:
+    AWS S3: upload true neighbors .csv files
+    AWS Lambda: create runtime with all needed packages (from Dockerfile.lambda)
+    AWS EC2: create c7i.xlarge from where tests will be executed. Leave everything by default except for security groups, where port 22 ssh access inbound connections must be allowed
+
+STEPS:
+    1. Upload code to ec2 instance
+    2. Upload query .csv files
+    3. Install all required packages
+           pip
+             lithops
+             faiss-cpu
+             numpy
+             pandas
+             boto3
+    4. Create .lithops_config file
+    5. Create runtime from ec2 instance
+    6. Run the following command:
+           python3 example.py --features <dataset_dimension> --k_search 10 --k_result 10 --skip_init --impl blocks --dataset <dataset_name> --num_index <number_partitions> --k 512 --n_probe 32 --query_batch_size <indexes_per_function> --storage_bucket <bucket_name> --search_map_memory 8192
+
+NOTES:
+    Every time a new lambda function with specific memory is invoked it needs to be deployed, adding extra overhead. It is recommended to let the experiment finish and then discard the results. 
+    When deploying a new function, it is recommended to increase the storage size from 512MB default to 2048MB

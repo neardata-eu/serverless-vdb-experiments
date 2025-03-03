@@ -1,0 +1,43 @@
+EXPERIMENT:
+    Indexing and querying on Milvus
+
+RESOURCES:
+    AWS EC2: create c7i.xlarge from where tests (vectordbbench tool by zilliztech)will be executed. Leave everything by default except for security groups, where port 22 ssh access inbound connections must be allowed
+             create c7i.4xlarge from where Milvus will run in standalone mode using Docker, with same resources as blocks 4F querying. Must add security groups for port 22 ssh inbound and port 19530 inbound. Disk size must be increased to 50GB.
+             create c7i.8xlarge from qhere Milvus will run in standalone mode using Docker, with same resources as blocks 8F querying. Must add security groups for port 22 shh inbound and port 19530 inbound. Disk size must be increased to 50GB.
+
+STEPS:
+    1. Install docker in vectordbbench instance and Milvus instance (whichever chosen)
+           sudo yum install docker
+           sudo service docker start
+           sudo usermod -a -G docker ec2-user
+           <exit and relogin to instance>
+           docker login -u <dockerhub_username>
+           <insert password or token>
+    2. Download acanadilla/vectordbbench:aws in vectordbbench instance
+    3. Start docker container
+           docker run -it --rm --name milvustest acanadilla/vectordbbench:aws
+    4. Download and run Milvus standalone (following https://milvus.io/docs/install_standalone-docker.md)
+           curl -sfL https://raw.githubusercontent.com/milvus-io/milvus/master/scripts/standalone_embed.sh -o standalone_embed.sh
+           chmod +x standalone_embed.sh
+           time ./standalone_embed start #to analyse startup time
+    5. Modify vectordbbench to allow for custom partition number
+           /usr/local/lib/python3.11/dist-packages/vectordb_bench/backend/clients/milvus/milvus.py:L40
+             partition_args = {"num_shards": 1}
+           /usr/local/lib/python3.11/dist-packages/vectordb_bench/backend/clients/milvus/milvus.py:L51
+             FieldSchema(self._scalar_field, DataType.INT64), -> FieldSchema(self._scalar_field, DataType.INT64, is_partition_key=True),
+           /usr/local/lib/python3.11/dist-packages/vectordb_bench/backend/clients/milvus/milvus.py:L62
+             **partition_args,
+             num_partitions=<num_partitions_desired>
+    6. Run vectordbbench in vectordbbench instance's container
+           vectordbbench milvusivfflat --uri http://<ec2_with_milvus_standalone_public_ipv4>:19530/ --lists 512 --probes 32 --skip-search-concurrent --case-type PerformanceCustomDataset --custom-dataset-dir /app/datasets/<dataset_name>/ --custom-dataset-size <dataset_row_count> --custom-dataset-dim <dataset_dimension> --custom-dataset-file-count 1 --custom-case-name Custom --custom-dataset-name <dataset_name> --custom-case-description TestDescription --custom-dataset-metric-type L2 --custom-case-load-timeout 36000 --custom-case-optimize-timeout 36000 --user-name test --password test --k 10 --skip-drop-old --skip-load
+    7. Fetch results from /usr/local/lib/python3.11/dist-packages/vectordb_bench/results/Milvus/<results_file_name>.json and from stdout
+
+NOTES:
+    User must modify the num_partitions value on milvus.py:L62 to the desired spec.
+    If querying only, user should add --skip-drop-old and --skip-load options when running vectordbbench
+    After every indexing, some files must be deleted on the Milvus standalone instance, since Milvus doesn't overwrite files and just keep piling up on disk. Also, container logs file increases very fast.
+        sudo rm -r volumes/*
+        sudo su
+        rm /var/lib/docker/containers/<container_id>/<logfile_name>.json
+        exit
