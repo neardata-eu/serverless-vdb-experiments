@@ -38,7 +38,7 @@ plt.rcParams.update(
         "grid.linestyle": "-",
         "axes.edgecolor": mpl.rcParams["grid.color"],
         # "ytick.color": mpl.rcParams["grid.color"],
-        # "ytick.direction": "in",
+        "ytick.direction": "in",
         # "xtick.color": mpl.rcParams["grid.color"],
         # "xtick.direction": "in",
         "xtick.major.pad": 2,
@@ -46,9 +46,9 @@ plt.rcParams.update(
         "axes.titlesize": "medium",
         "axes.titlepad": 4,
         "axes.labelpad": 2,
-        "axes.spines.top": True,
+        "axes.spines.top": False,
         "axes.spines.right": True,
-        "axes.spines.bottom": True,
+        "axes.spines.bottom": False,
         "axes.spines.left": True,
         "axes.axisbelow": True,  # grid below patches
         "axes.prop_cycle": cycler(
@@ -63,6 +63,8 @@ plt.rcParams.update(
         "legend.borderpad": 0.3,
     }
 )
+
+CAPSIZE = 3
 
 results_dir = os.path.dirname(os.path.dirname(__file__)) + "/results"
 plots_dir = os.path.dirname(os.path.dirname(__file__)) + "/plots"
@@ -102,14 +104,15 @@ def create_indexing_dataset_plot(data, dataset, dst):
     # ax.plot(x, blocks_avg, label="Blocks", marker="o")
     # ax.plot(x, clustering_avg, label="Clustering", marker="o")
 
-    ax.bar(x - width / 2, blocks_avg, width, label="Blocks", yerr=blocks_stdevs, capsize=5)
-    ax.bar(x + width / 2, clustering_avg, width, label="Clustering", yerr=clustering_stdevs, capsize=5)
+    ax.bar(x - width / 2, blocks_avg, width, label="Blocks", yerr=blocks_stdevs, capsize=CAPSIZE)
+    ax.bar(x + width / 2, clustering_avg, width, label="Clustering", yerr=clustering_stdevs, capsize=CAPSIZE)
 
     ax.set_xlabel("Number of partitions")
     ax.set_ylabel("Indexing time (s)")
     # ax.set_title("Total Indexing Time Comparison: Blocks vs Clustering")
     ax.set_xticks(x)
     ax.set_xticklabels(configs)
+    ax.grid(True)
     ax.legend()
 
     pylab.tight_layout()
@@ -132,14 +135,15 @@ def create_indexing_config_plot(data, config, datasets, dst):
     # ax.plot(x, blocks_avg, label="Blocks", marker="o")
     # ax.plot(x, clustering_avg, label="Clustering", marker="o")
 
-    ax.bar(x - width / 2, blocks_avg, width, label="Blocks", yerr=blocks_stdevs, capsize=5)
-    ax.bar(x + width / 2, clustering_avg, width, label="Clustering", yerr=clustering_stdevs, capsize=5)
+    ax.bar(x - width / 2, blocks_avg, width, label="Blocks", yerr=blocks_stdevs, capsize=CAPSIZE)
+    ax.bar(x + width / 2, clustering_avg, width, label="Clustering", yerr=clustering_stdevs, capsize=CAPSIZE)
 
     ax.set_xlabel("Dataset")
     ax.set_ylabel("Indexing time (s)")
     # ax.set_title("Total Indexing Time Comparison: Blocks vs Clustering")
     ax.set_xticks(x)
     ax.set_xticklabels(datasets)
+    ax.grid(True)
     ax.legend()
 
     pylab.tight_layout()
@@ -160,7 +164,7 @@ def side_by_side_bar_plot(data, impl, dataset, config, dst):
     impl_avg = [data[dataset][impl].get(config, {"mean": 0})["mean"] for dataset in datasets]
     impl_stdevs = [data[dataset][impl].get(config, {"stdev": 0})["stdev"] for dataset in datasets]
 
-    left.bar(x, impl_avg, width, label=impl, yerr=impl_stdevs, capsize=5)
+    left.bar(x, impl_avg, width, label=impl, yerr=impl_stdevs, capsize=CAPSIZE)
 
     ticks = map(lambda x: x.replace("DEEP", ""), datasets)
 
@@ -168,6 +172,7 @@ def side_by_side_bar_plot(data, impl, dataset, config, dst):
     left.set_ylabel("Indexing time (s)")
     left.set_xticks(x)
     left.set_xticklabels(ticks)
+    left.grid(True)
 
     # right
     config_data = data[dataset][impl]
@@ -179,13 +184,12 @@ def side_by_side_bar_plot(data, impl, dataset, config, dst):
 
     configs = [str(x) for x in configs]
     x = np.arange(len(configs))
-    print(configs)
     width = 0.4
 
     impl_avg = [config_data.get(config, {"mean": 0})["mean"] for config in configs]
     impl_stdevs = [config_data.get(config, {"stdev": 0})["stdev"] for config in configs]
 
-    right.bar(x, impl_avg, width, label=impl, yerr=impl_stdevs, capsize=5)
+    right.bar(x, impl_avg, width, label=impl, yerr=impl_stdevs, capsize=CAPSIZE)
 
     # right.sharey(left)
     right.set_xlabel("Number of partitions")
@@ -193,6 +197,7 @@ def side_by_side_bar_plot(data, impl, dataset, config, dst):
     # right.set_title("Total Indexing Time Comparison: Blocks vs Clustering")
     right.set_xticks(x)
     right.set_xticklabels(configs)
+    right.grid(True)
 
     pylab.tight_layout()
     pylab.savefig(dst)
