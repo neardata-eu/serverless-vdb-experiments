@@ -26,7 +26,7 @@ plt.rcParams.update(
         # "font.size": 10,     # caption size 10pt on thesis
         "pgf.preamble": "\n".join(
             [
-                r"\usepackage{libertine}",
+                r"\usepackage{libertinus}",
                 r"\usepackage{newtxmath}",
                 # r"\usepackage{lmodern}",
             ]
@@ -67,7 +67,8 @@ plt.rcParams.update(
 CAPSIZE = 3
 
 results_dir = os.path.dirname(os.path.dirname(__file__)) + "/results"
-plots_dir = os.path.dirname(os.path.dirname(__file__)) + "/plots"
+plots_dir = os.path.dirname(os.path.dirname(__file__)) + "/plots/blocks_vs_clustering"
+os.makedirs(plots_dir, exist_ok=True)
 
 # dataset size, dataset name, implementation, pretty dataset name, pretty implementation name
 INPUTS = [
@@ -151,7 +152,7 @@ def create_indexing_config_plot(data, config, datasets, dst):
 
 
 def side_by_side_bar_plot(data, impl, dataset, config, dst):
-    fig, axs = plt.subplots(1, 2, figsize=(3.33, 1.6))
+    fig, axs = plt.subplots(1, 2, figsize=(3.33, 1.4))
     left = axs[0]
     right = axs[1]
 
@@ -190,6 +191,68 @@ def side_by_side_bar_plot(data, impl, dataset, config, dst):
     impl_stdevs = [config_data.get(config, {"stdev": 0})["stdev"] for config in configs]
 
     right.bar(x, impl_avg, width, label=impl, yerr=impl_stdevs, capsize=CAPSIZE)
+
+    # right.sharey(left)
+    right.set_xlabel("Number of partitions")
+    # right.set_ylabel("Indexing time (s)")
+    # right.set_title("Total Indexing Time Comparison: Blocks vs Clustering")
+    right.set_xticks(x)
+    right.set_xticklabels(configs)
+    right.grid(True)
+
+    pylab.tight_layout()
+    pylab.savefig(dst)
+
+
+def side_by_side_bar_compare(data, dataset, config, dst):
+    fig, axs = plt.subplots(1, 2, figsize=(3.33, 1.4))
+    left = axs[0]
+    right = axs[1]
+
+    # left
+    datasets = list(data.keys())
+    datasets.reverse()
+    x = np.arange(len(datasets))
+    width = 0.4
+
+    blocks_avg = [data[dataset]["Blocks"].get(config, {"mean": 0})["mean"] for dataset in datasets]
+    blocks_stdevs = [data[dataset]["Blocks"].get(config, {"stdev": 0})["stdev"] for dataset in datasets]
+    clustering_avg = [data[dataset]["Clustering"].get(config, {"mean": 0})["mean"] for dataset in datasets]
+    clustering_stdevs = [data[dataset]["Clustering"].get(config, {"stdev": 0})["stdev"] for dataset in datasets]
+
+    left.bar(x - width / 2, blocks_avg, width, label="Blocks", yerr=blocks_stdevs, capsize=CAPSIZE)
+    left.bar(x + width / 2, clustering_avg, width, label="Clustering", yerr=clustering_stdevs, capsize=CAPSIZE)
+
+    ticks = map(lambda x: x.replace("DEEP", ""), datasets)
+
+    left.set_xlabel("Dataset size (DEEP)")
+    left.set_ylabel("Indexing time (s)")
+    left.set_xticks(x)
+    left.set_xticklabels(ticks)
+    left.grid(True)
+
+    left.legend()
+
+    # right
+    config_data_blocks = data[dataset]["Blocks"]
+    config_data_clustering = data[dataset]["Clustering"]
+
+    configs = sorted(
+        config_data_blocks.keys(),
+        key=lambda x: int(x),  # Convert keys to integers for proper numerical sorting
+    )
+
+    configs = [str(x) for x in configs]
+    x = np.arange(len(configs))
+    width = 0.4
+
+    blocks_avg = [config_data_blocks.get(config, {"mean": 0})["mean"] for config in configs]
+    blocks_stdevs = [config_data_blocks.get(config, {"stdev": 0})["stdev"] for config in configs]
+    clustering_avg = [config_data_clustering.get(config, {"mean": 0})["mean"] for config in configs]
+    clustering_stdevs = [config_data_clustering.get(config, {"stdev": 0})["stdev"] for config in configs]
+
+    right.bar(x - width / 2, blocks_avg, width, label="Blocks", yerr=blocks_stdevs, capsize=CAPSIZE)
+    right.bar(x + width / 2, clustering_avg, width, label="Clustering", yerr=clustering_stdevs, capsize=CAPSIZE)
 
     # right.sharey(left)
     right.set_xlabel("Number of partitions")
@@ -266,7 +329,10 @@ def main():
     for config in configs:
         create_indexing_config_plot(data, config, datasets, f"{plots_dir}/indexing_comparison_{config}.pdf")
 
-    side_by_side_bar_plot(data, "Clustering", "DEEP100k", "16", f"{plots_dir}/indexing_scaling_side_by_side.pdf")
+    side_by_side_bar_plot(data, "Clustering", "DEEP100k", "16", f"{plots_dir}/indexing_scaling_side_by_side_clustering.pdf")
+    side_by_side_bar_plot(data, "Blocks", "DEEP1M", "16", f"{plots_dir}/indexing_scaling_side_by_side_blocks.pdf")
+
+    side_by_side_bar_compare(data, "DEEP1M", "16", f"{plots_dir}/indexing_scaling_side_by_side_compare.pdf")
 
 
 if __name__ == "__main__":
