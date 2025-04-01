@@ -74,11 +74,11 @@ os.makedirs(plots_dir, exist_ok=True)
 
 # dataset name, implementation, pretty dataset name, pretty implementation name
 INPUTS = [
-    ("deep", "blocks", "DEEP10M", "Blocks"),
+    ("deep", "blocks", "DEEP10M", "SVDB"),
     ("deep", "milvus", "DEEP10M", "Milvus"),
-    ("sift", "blocks", "SIFT10M", "Blocks"),
+    ("sift", "blocks", "SIFT10M", "SVDB"),
     ("sift", "milvus", "SIFT10M", "Milvus"),
-    ("gist", "blocks", "GIST1M", "Blocks"),
+    ("gist", "blocks", "GIST1M", "SVDB"),
     ("gist", "milvus", "GIST1M", "Milvus"),
 ]
 
@@ -182,14 +182,14 @@ def plot_comparison(data, dst):
     fig, axs = pylab.subplots(2, 3, figsize=(6.6, 3.6))
     for i, dataset in enumerate(data):
         configs = sorted(
-            set().union(data[dataset]["Blocks"]["indexing"].keys(), data[dataset]["Milvus"]["indexing"].keys()),
+            set().union(data[dataset]["SVDB"]["indexing"].keys(), data[dataset]["Milvus"]["indexing"].keys()),
             key=lambda x: int(x),
         )
 
         milvus_means = np.array([statistics.mean(data[dataset]["Milvus"]["indexing"][c]) for c in configs]) / 60
         milvus_sd = np.array([statistics.stdev(data[dataset]["Milvus"]["indexing"][c]) for c in configs]) / 60
-        blocks_means = np.array([statistics.mean(data[dataset]["Blocks"]["indexing"][c]) for c in configs]) / 60
-        blocks_sd = np.array([statistics.stdev(data[dataset]["Blocks"]["indexing"][c]) for c in configs]) / 60
+        blocks_means = np.array([statistics.mean(data[dataset]["SVDB"]["indexing"][c]) for c in configs]) / 60
+        blocks_sd = np.array([statistics.stdev(data[dataset]["SVDB"]["indexing"][c]) for c in configs]) / 60
 
         x = np.arange(len(configs))
         width = 0.4
@@ -204,7 +204,7 @@ def plot_comparison(data, dst):
             fmt="none",
             ecolor="black",
         )
-        axs[0][i].bar(x + width / 2, blocks_means, width, label="Blocks")
+        axs[0][i].bar(x + width / 2, blocks_means, width, label="SVDB")
         axs[0][i].errorbar(
             x + width / 2,
             blocks_means,
@@ -237,22 +237,22 @@ def plot_comparison(data, dst):
 
     for i, dataset in enumerate(data):
         configs = sorted(
-            set().union(data[dataset]["Blocks"]["querying"].keys(), data[dataset]["Milvus"]["querying"].keys()),
+            set().union(data[dataset]["SVDB"]["querying"].keys(), data[dataset]["Milvus"]["querying"].keys()),
             key=lambda x: tuple(map(int, x.split("_"))),
         )
 
         milvus_means = np.array([statistics.mean(data[dataset]["Milvus"]["querying"][c]) for c in configs])
         milvus_sd = np.array([statistics.stdev(data[dataset]["Milvus"]["querying"][c]) for c in configs])
-        blocks_means = np.array([statistics.mean(data[dataset]["Blocks"]["querying"][c]["query"]) for c in configs])
-        blocks_sd = np.array([statistics.stdev(data[dataset]["Blocks"]["querying"][c]["query"]) for c in configs])
-        # blocks_tot_means = np.array([statistics.mean(data[dataset]["Blocks"]["querying"][c]["total"]) for c in configs])
-        blocks_tot_sd = np.array([statistics.stdev(data[dataset]["Blocks"]["querying"][c]["total"]) for c in configs])
+        blocks_means = np.array([statistics.mean(data[dataset]["SVDB"]["querying"][c]["query"]) for c in configs])
+        blocks_sd = np.array([statistics.stdev(data[dataset]["SVDB"]["querying"][c]["query"]) for c in configs])
+        # blocks_tot_means = np.array([statistics.mean(data[dataset]["SVDB"]["querying"][c]["total"]) for c in configs])
+        blocks_tot_sd = np.array([statistics.stdev(data[dataset]["SVDB"]["querying"][c]["total"]) for c in configs])
         blocks_inv_means = np.array(
-            [statistics.mean(data[dataset]["Blocks"]["querying"][c]["invoke"]) for c in configs]
+            [statistics.mean(data[dataset]["SVDB"]["querying"][c]["invoke"]) for c in configs]
         )
-        # blocks_inv_sd = np.array([statistics.stdev(data[dataset]["Blocks"]["querying"][c]["invoke"]) for c in configs])
-        blocks_load_means = np.array([statistics.mean(data[dataset]["Blocks"]["querying"][c]["load"]) for c in configs])
-        # blocks_load_sd = np.array([statistics.stdev(data[dataset]["Blocks"]["querying"][c]["load"]) for c in configs])
+        # blocks_inv_sd = np.array([statistics.stdev(data[dataset]["SVDB"]["querying"][c]["invoke"]) for c in configs])
+        blocks_load_means = np.array([statistics.mean(data[dataset]["SVDB"]["querying"][c]["load"]) for c in configs])
+        # blocks_load_sd = np.array([statistics.stdev(data[dataset]["SVDB"]["querying"][c]["load"]) for c in configs])
 
         x = np.arange(len(configs))
         width = 0.4
@@ -267,10 +267,10 @@ def plot_comparison(data, dst):
             fmt="none",
             ecolor="black",
         )
-        axs[1][i].bar(x + width / 2, blocks_means, width, label="Blocks: Query")
-        axs[1][i].bar(x + width / 2, blocks_inv_means, width, label="Blocks: Invoke", bottom=blocks_means)
+        axs[1][i].bar(x + width / 2, blocks_means, width, label="SVDB: Query")
+        axs[1][i].bar(x + width / 2, blocks_inv_means, width, label="SVDB: Invoke", bottom=blocks_means)
         axs[1][i].bar(
-            x + width / 2, blocks_load_means, width, label="Blocks: Load", bottom=blocks_means + blocks_inv_means
+            x + width / 2, blocks_load_means, width, label="SVDB: Load", bottom=blocks_means + blocks_inv_means
         )
         axs[1][i].errorbar(
             x + width / 2,
