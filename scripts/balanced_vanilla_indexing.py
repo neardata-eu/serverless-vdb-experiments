@@ -109,7 +109,7 @@ ax.bar(x + width/2,
 # Configure axes
 ax.set_xticks(x)
 ax.set_xticklabels(x_labels)
-ax.set_xlabel('Number of Indexes', fontsize=8)
+ax.set_xlabel('Number of Partitions', fontsize=8)
 ax.set_ylabel('Indexing Time (s)', fontsize=8)
 
 # Determine the range of the data to set appropriate y-axis limits
