@@ -269,8 +269,15 @@ def side_by_side_bar_compare(data, dataset, config, dst):
 def main():
     data = {}
     for size, dataset, impl, pretty_dataset, pretty_impl in INPUTS:
-        path = f"{results_dir}/{dataset}/{impl}/indexing"
+        print(impl)
+        if dataset == "deep100k" and impl == "centroids":
+            path = f"{results_dir}/{dataset}/{impl}/0/indexing/unbalanced"
+        elif impl == "blocks":
+            path = f"{results_dir}/{dataset}/{impl}/indexing/"
+        else:
+            path = f"{results_dir}/{dataset}/{impl}/0/indexing"
         if not os.path.exists(path):
+            print(path)
             continue
 
         for filename in os.listdir(path):
