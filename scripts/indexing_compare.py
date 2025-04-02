@@ -60,7 +60,7 @@ plt.rcParams.update(
         "legend.handlelength": 1,
         "legend.handletextpad": 0.2,
         "legend.columnspacing": 1,
-        "legend.borderpad": 0.3,
+        "legend.borderpad": 0,
     }
 )
 
@@ -108,9 +108,8 @@ def create_indexing_dataset_plot(data, dataset, dst):
     ax.bar(x - width / 2, blocks_avg, width, label="Blocks", yerr=blocks_stdevs, capsize=CAPSIZE)
     ax.bar(x + width / 2, clustering_avg, width, label="Clustering", yerr=clustering_stdevs, capsize=CAPSIZE)
 
-    ax.set_xlabel("Number of partitions")
-    ax.set_ylabel("Indexing time (s)")
-    # ax.set_title("Total Indexing Time Comparison: Blocks vs Clustering")
+    ax.set_xlabel("Num. Partitions ($N$)")
+    ax.set_ylabel("Partitioning Time (s)")
     ax.set_xticks(x)
     ax.set_xticklabels(configs)
     ax.grid(True)
@@ -169,8 +168,8 @@ def side_by_side_bar_plot(data, impl, dataset, config, dst):
 
     ticks = map(lambda x: x.replace("DEEP", ""), datasets)
 
-    left.set_xlabel("Dataset size (DEEP)")
-    left.set_ylabel("Indexing time (s)")
+    left.set_xlabel("Dataset Size (DEEP)")
+    left.set_ylabel("Partitioning Time (s)")
     left.set_xticks(x)
     left.set_xticklabels(ticks)
     left.grid(True)
@@ -193,7 +192,7 @@ def side_by_side_bar_plot(data, impl, dataset, config, dst):
     right.bar(x, impl_avg, width, label=impl, yerr=impl_stdevs, capsize=CAPSIZE)
 
     # right.sharey(left)
-    right.set_xlabel("Number of partitions")
+    right.set_xlabel("Num. Partitions ($N$)")
     # right.set_ylabel("Indexing time (s)")
     # right.set_title("Total Indexing Time Comparison: Blocks vs Clustering")
     right.set_xticks(x)
@@ -204,8 +203,8 @@ def side_by_side_bar_plot(data, impl, dataset, config, dst):
     pylab.savefig(dst)
 
 
-def side_by_side_bar_compare(data, dataset, config, dst):
-    fig, axs = plt.subplots(1, 2, figsize=(3.33, 1.4))
+def side_by_side_bar_compare(data, dataset_set, config, dst):
+    fig, axs = plt.subplots(1, 2, figsize=(3.33, 1.5))
     left = axs[0]
     right = axs[1]
 
@@ -220,22 +219,38 @@ def side_by_side_bar_compare(data, dataset, config, dst):
     clustering_avg = [data[dataset]["Clustering"].get(config, {"mean": 0})["mean"] for dataset in datasets]
     clustering_stdevs = [data[dataset]["Clustering"].get(config, {"stdev": 0})["stdev"] for dataset in datasets]
 
-    left.bar(x - width / 2, blocks_avg, width, label="Blocks", yerr=blocks_stdevs, capsize=CAPSIZE)
-    left.bar(x + width / 2, clustering_avg, width, label="Clustering", yerr=clustering_stdevs, capsize=CAPSIZE)
+    left.bar(
+        x - width / 2,
+        blocks_avg,
+        width,
+        label="Blocks",
+        yerr=blocks_stdevs,
+        capsize=CAPSIZE,
+    )
+    left.bar(
+        x + width / 2,
+        clustering_avg,
+        width,
+        label="Clustering",
+        yerr=clustering_stdevs,
+        capsize=CAPSIZE,
+    )
 
     ticks = map(lambda x: x.replace("DEEP", ""), datasets)
 
-    left.set_xlabel("Dataset size (DEEP)")
-    left.set_ylabel("Indexing time (s)")
+    left.set_xlabel("Dataset Size (DEEP)")
+    left.set_ylabel("Partitioning Time (s)")
+    left.set_title("$N=" + str(config) + "$")
     left.set_xticks(x)
     left.set_xticklabels(ticks)
     left.grid(True)
 
-    left.legend()
+    fig.legend(frameon=False, bbox_to_anchor=(0.5, 1), loc="upper center", ncol=2)
+    # left.legend()
 
     # right
-    config_data_blocks = data[dataset]["Blocks"]
-    config_data_clustering = data[dataset]["Clustering"]
+    config_data_blocks = data[dataset_set]["Blocks"]
+    config_data_clustering = data[dataset_set]["Clustering"]
 
     configs = sorted(
         config_data_blocks.keys(),
@@ -251,18 +266,42 @@ def side_by_side_bar_compare(data, dataset, config, dst):
     clustering_avg = [config_data_clustering.get(config, {"mean": 0})["mean"] for config in configs]
     clustering_stdevs = [config_data_clustering.get(config, {"stdev": 0})["stdev"] for config in configs]
 
-    right.bar(x - width / 2, blocks_avg, width, label="Blocks", yerr=blocks_stdevs, capsize=CAPSIZE)
-    right.bar(x + width / 2, clustering_avg, width, label="Clustering", yerr=clustering_stdevs, capsize=CAPSIZE)
+    right.bar(
+        x - width / 2,
+        blocks_avg,
+        width,
+        label="Blocks",
+        yerr=blocks_stdevs,
+        capsize=CAPSIZE,
+    )
+    right.bar(
+        x + width / 2,
+        clustering_avg,
+        width,
+        label="Clustering",
+        yerr=clustering_stdevs,
+        capsize=CAPSIZE,
+    )
 
     # right.sharey(left)
-    right.set_xlabel("Number of partitions")
+    right.set_xlabel("Num. Partitions ($N$)")
     # right.set_ylabel("Indexing time (s)")
-    # right.set_title("Total Indexing Time Comparison: Blocks vs Clustering")
+    right.set_title(dataset_set)
     right.set_xticks(x)
     right.set_xticklabels(configs)
     right.grid(True)
 
+    # fig.legend(
+    #             bbox_to_anchor=(1, 0.55, 0.6, 1),
+    #             loc="lower right",
+    #             # mode="expand",
+    #             borderaxespad=0,
+    #             ncol=2,
+    #             frameon=False,
+    #         )
+
     pylab.tight_layout()
+    pylab.subplots_adjust(top=0.75, bottom=0.23)
     pylab.savefig(dst)
 
 
@@ -318,25 +357,27 @@ def main():
     }
 
     pprint(data)
-    for dataset in data:
-        create_indexing_dataset_plot(data, dataset, f"{plots_dir}/indexing_comparison_{dataset}.pdf")
+    # for dataset in data:
+    #     create_indexing_dataset_plot(data, dataset, f"{plots_dir}/indexing_comparison_{dataset}.pdf")
 
-    impl_data = data[dataset]
+    # impl_data = data[dataset]
 
-    configs = sorted(
-        set().union(
-            *[impl_data[impl].keys() for impl in impl_data],
-        ),
-        key=lambda x: int(x),  # Convert keys to integers for proper numerical sorting
+    # configs = sorted(
+    #     set().union(
+    #         *[impl_data[impl].keys() for impl in impl_data],
+    #     ),
+    #     key=lambda x: int(x),  # Convert keys to integers for proper numerical sorting
+    # )
+
+    # configs = [str(x) for x in configs]
+    # datasets = list(data.keys())
+    # datasets.reverse()
+    # for config in configs:
+    #     create_indexing_config_plot(data, config, datasets, f"{plots_dir}/indexing_comparison_{config}.pdf")
+
+    side_by_side_bar_plot(
+        data, "Clustering", "DEEP100k", "16", f"{plots_dir}/indexing_scaling_side_by_side_clustering.pdf"
     )
-
-    configs = [str(x) for x in configs]
-    datasets = list(data.keys())
-    datasets.reverse()
-    for config in configs:
-        create_indexing_config_plot(data, config, datasets, f"{plots_dir}/indexing_comparison_{config}.pdf")
-
-    side_by_side_bar_plot(data, "Clustering", "DEEP100k", "16", f"{plots_dir}/indexing_scaling_side_by_side_clustering.pdf")
     side_by_side_bar_plot(data, "Blocks", "DEEP1M", "16", f"{plots_dir}/indexing_scaling_side_by_side_blocks.pdf")
 
     side_by_side_bar_compare(data, "DEEP1M", "16", f"{plots_dir}/indexing_scaling_side_by_side_compare.pdf")

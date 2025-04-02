@@ -37,9 +37,12 @@ plt.rcParams.update(
         "axes.spines.bottom": False,
         "axes.spines.left": True,
         "axes.axisbelow": True,
-        "axes.prop_cycle": cycler("color", ["#b2182b", "#ef8a62", "#67a9cf", "#2166ac"]),
+        "axes.prop_cycle": cycler(
+            "color",
+            ["#b2182b", "#ef8a62", "#fddbc7", "#d1e5f0", "#67a9cf", "#2166ac"],
+        ),
         "legend.labelspacing": 0.1,
-        "legend.handlelength": 1,
+        # "legend.handlelength": 1,
         "legend.handletextpad": 0.2,
         "legend.columnspacing": 1,
         "legend.borderpad": 0,
@@ -107,12 +110,14 @@ def prepare_cost_data(results):
     return cost_data
 
 
+line_styles = ["-", "--", "-.", ":"]
+
 cost_data = prepare_cost_data(results)
 
-fig, axs = plt.subplots(1, 4, figsize=(7, 2))
+fig, axs = plt.subplots(1, 4, figsize=(7, 1.8))
 # Modified plotting section with more y-axis ticks
 for p, ax in zip([16, 32, 64, 128], axs.flatten()):
-    ax.set_title("\\textbf{" + str(p) + " Partitions}")
+    ax.set_title("$N=" + str(p) + "$")
     # if p in [64, 128]:
     ax.set_xlabel("Redundancy Factor")
     if p in [16]:
@@ -131,7 +136,7 @@ for p, ax in zip([16, 32, 64, 128], axs.flatten()):
 
     # Plot indexing costs as bars
     indexing_costs = [cost_data[p]["indexing"][r][1] for r in [0, 1, 2, 5]]
-    bars = ax.bar(x, indexing_costs, bar_width, label="Indexing", color=colors[0], alpha=0.75)
+    bars = ax.bar(x, indexing_costs, bar_width, label="Partitioning", alpha=0.75)
     # Plot querying costs as lines with markers
     for idx, ncs in enumerate(cost_data[p]["num_centroids_search_values"], start=1):
         querying_costs = [cost_data[p]["querying"][r][ncs] for r in [0, 1, 2, 5]]
@@ -139,10 +144,10 @@ for p, ax in zip([16, 32, 64, 128], axs.flatten()):
             x,
             querying_costs,
             marker="o",
-            markersize=4,
+            markersize=3,
+            linestyle=line_styles[idx % len(line_styles)],
             label=f"Querying {ncs} Partitions",
-            color=colors[idx % len(colors)],
-            linewidth=1.5,
+            linewidth=1,
         )
     # Customize the plot
     ax.set_xticks(x)
@@ -172,12 +177,12 @@ for i, label in enumerate(la):
 
 ph = [plt.plot([], marker="", ls="")[0]]  # Canvas
 handles = ph + h
-labels = ["Search Partitions:"] + la  # Merging labels
+labels = ["$N_{\\text{search}}$:"] + la  # Merging labels
 lastl = labels.pop(-1)
 lasth = handles.pop(-1)
 
-handles = handles[:5] + ph + [lasth]
-labels = labels[:5] + ["   "] + [lastl]
+handles = handles[:6] + ph + [lasth]
+labels = labels[:6] + ["   "] + [lastl]
 fig.legend(
     handles,
     labels,
@@ -186,11 +191,11 @@ fig.legend(
     loc="upper center",
     # mode="expand",
     borderaxespad=0,
-    ncol=7,
+    ncol=8,
     frameon=False,
 )
 
 plt.tight_layout()
-plt.subplots_adjust(top=0.78)
-plt.savefig("../plots/replication_analysis/cost_breakdown.pdf", dpi=300, bbox_inches="tight")
+plt.subplots_adjust(top=0.78, bottom=0.2)
+plt.savefig("../plots/replication_analysis/cost_breakdown.pdf")
 plt.close()

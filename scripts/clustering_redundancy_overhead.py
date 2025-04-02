@@ -66,7 +66,7 @@ plt.rcParams.update(
 )
 
 
-CAPSIZE = 3
+CAPSIZE = 0.5
 
 results_dir = os.path.dirname(os.path.dirname(__file__)) + "/results"
 plots_dir = os.path.dirname(os.path.dirname(__file__)) + "/plots/clustering"
@@ -103,7 +103,7 @@ def parse_dataframe(redundancy):
 
 
 def plot_percentages(df: pd.DataFrame, dst):
-    fig, ax = pylab.subplots(1, 2, figsize=(3.33, 1.5))
+    fig, ax = pylab.subplots(1, 2, figsize=(3.33, 1.4))
     # ax2 = ax.twinx()
 
     sns.barplot(
@@ -115,14 +115,15 @@ def plot_percentages(df: pd.DataFrame, dst):
         err_kws={
             "linewidth": 0.5,
         },
+        capsize=CAPSIZE,
         # palette="colorblind",
         ax=ax[0],
         legend=None,
     )
     ax[0].grid(True)
-    ax[0].set_ylabel("Time Inc. (%)")
-    ax[0].set_xlabel("Number of Partitions")
-    ax[0].set_ylim(0, 25)
+    ax[0].set_ylabel("% Increase in\nPartitioning Time")
+    ax[0].set_xlabel("Num. Partitions ($N$)")
+    # ax[0].set_xlim(0, 25)
     # h, l = ax[0].get_legend_handles_labels() # Extracting handles and labels
     # ph = [plt.plot([],marker="", ls="")[0]] # Canvas
     # handles = ph + h
@@ -149,8 +150,8 @@ def plot_percentages(df: pd.DataFrame, dst):
         ax=ax[1],
     )
     ax[1].grid(True)
-    ax[1].set_ylabel("Size Inc. (%)")
-    ax[1].set_xlabel("Number of Partitions")
+    ax[1].set_ylabel("% Increase in\nNum. of Vectors")
+    ax[1].set_xlabel("Num. Partitions ($N$)")
     # ax[1].legend(
     #     title="Redundancy",
     #     # alignment="left",
@@ -197,7 +198,7 @@ def plot_percentages(df: pd.DataFrame, dst):
     # ax.sharey(ax2)
 
     pylab.tight_layout()
-    pylab.subplots_adjust(top=0.85, bottom=0.25)
+    pylab.subplots_adjust(top=0.85, bottom=0.25, left=0.15)
     pylab.savefig(dst)
 
 

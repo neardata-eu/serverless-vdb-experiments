@@ -38,7 +38,7 @@ plt.rcParams.update(
         "axes.axisbelow": True,
         "axes.prop_cycle": cycler("color", ["#b2182b", "#ef8a62", "#67a9cf", "#2166ac"]),
         "legend.labelspacing": 0.1,
-        "legend.handlelength": 1,
+        # "legend.handlelength": 1,
         "legend.handletextpad": 0.2,
         "legend.columnspacing": 1,
         "legend.borderpad": 0,
@@ -61,7 +61,7 @@ for r in [0, 1, 2, 5]:
 # Define plot style parameters
 line_styles = ["-", "--", "-.", ":"]
 
-fig, axs = plt.subplots(1, 4, figsize=(7, 2))
+fig, axs = plt.subplots(1, 4, figsize=(7, 1.8))
 # Create a separate plot for each p value
 for p, ax in zip([16, 32, 64, 128], axs.flatten()):
     # Create a figure
@@ -92,10 +92,10 @@ for p, ax in zip([16, 32, 64, 128], axs.flatten()):
     ax.set_yticks([60, 70, 80, 90, 100])
     ax.set_xticks(x)
     # if p in [64, 128]:
-    ax.set_xlabel("Num. Partitions Searched")
+    ax.set_xlabel("$N_{\\text{search}}$")
     if p in [16]:
         ax.set_ylabel("Recall (%)")
-    ax.set_title("\\textbf{" + str(p) + " Partitions}")
+    ax.set_title("$N=" + str(p) + "$")
     ax.grid(True, linestyle="-", alpha=0.3)
 
     # Highlight the zoomed region in the main plot
@@ -154,6 +154,6 @@ fig.legend(
 
 # Adjust layout and save
 plt.tight_layout()
-plt.subplots_adjust(top=0.78)
-plt.savefig("../plots/replication_analysis/replication_analysis_recall.pdf", dpi=300, bbox_inches="tight")
+plt.subplots_adjust(top=0.78, bottom=0.2)
+plt.savefig("../plots/replication_analysis/replication_analysis_recall.pdf")
 plt.close()  # Close the figure to free memory
