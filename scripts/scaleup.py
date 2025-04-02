@@ -81,7 +81,7 @@ INPUTS = [
 def plot_scaleup(data, dst):
     fig, ax = pylab.subplots(figsize=(3.33, 1.5))
     x = np.arange(len(data))
-    width = 0.6
+    width = 0.3
     bottom = np.zeros(len(data))
     datasets = list(data.keys())
     stages = list(data[datasets[0]].keys())
