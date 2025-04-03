@@ -221,5 +221,5 @@ ax.legend(
 # Adjust layout and save
 plt.tight_layout()
 plt.subplots_adjust(top=0.85, bottom=0.2)
-plt.savefig("../plots/blocks_vs_clustering/cost_breakdown.pdf")
+plt.savefig("../plots/blocks_vs_clustering/blocks_clustering_cost_breakdown.pdf")
 plt.close()
