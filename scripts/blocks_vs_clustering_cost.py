@@ -129,7 +129,7 @@ def prepare_cost_data(results):
 cost_data = prepare_cost_data(results)
 
 # Create a single plot
-fig, ax = plt.subplots(figsize=(3.33, 2.5))
+fig, ax = plt.subplots(figsize=(3.33, 1.75))
 
 # Set up the X-axis (n_partitions)
 n_partitions = cost_data["n_partitions"]
@@ -209,7 +209,7 @@ ax.legend(
     handles,
     labels,
     loc="upper center",
-    bbox_to_anchor=(0.5, 1.20),
+    bbox_to_anchor=(0.5, 1.275),
     ncol=2,
     frameon=False,
     labelspacing=0.1,
