@@ -51,7 +51,10 @@ plt.rcParams.update(
 LAMBDA_GB_SECOND = 0.0000166667
 EC2_CENTROIDS_PER_SECOND = 0.00059444444
 results = {
-    p: {impl: {"indexing_cost": [], "querying_cost": []} for impl in ["centroids", "blocks"]}
+    p: {
+        impl: {"indexing_cost": [], "querying_cost": []}
+        for impl in ["centroids100", "centroids75", "centroids50", "centroids25", "blocks"]
+    }
     for p in [16, 32, 64, 128]
 }
 
@@ -61,7 +64,7 @@ for filename in os.listdir(directory):
         data = json.load(file)
         n_centroids = data["params"]["num_index"]
         num_centroids_search = data["params"]["num_centroids_search"]
-        results[n_centroids]["centroids"]["indexing_cost"].append(
+        results[n_centroids]["centroids100"]["indexing_cost"].append(
             EC2_CENTROIDS_PER_SECOND * (data["load_dataset_centroids"][0] + data["global_index_centroids"])
             + sum(map(lambda x: x * LAMBDA_GB_SECOND * 10, data["distribute_vectors_centroids"]))
             + sum(map(lambda x: x * LAMBDA_GB_SECOND * 10, data["generate_index_centroids"]))
@@ -73,13 +76,30 @@ for filename in os.listdir(directory):
         data = json.load(file)
         n_centroids = data["params"]["num_index"]
         num_centroids_search = data["params"]["num_centroids_search"]
-        if n_centroids != num_centroids_search:
-            continue
         map_times = [query_execution[0] for batch in data["map_queries_times"] for query_execution in batch]
-        results[n_centroids]["centroids"]["querying_cost"].append(
-            sum(10 * x * LAMBDA_GB_SECOND * 8 for x in map_times)
-            + sum(10 * x * LAMBDA_GB_SECOND * 2 for x in data["reduce_queries_times"][0])
-        )
+        if n_centroids == num_centroids_search:
+            results[n_centroids]["centroids100"]["querying_cost"].append(
+                sum(10 * x * LAMBDA_GB_SECOND * 8 for x in map_times)
+                + sum(10 * x * LAMBDA_GB_SECOND * 2 for x in data["reduce_queries_times"][0])
+            )
+        elif num_centroids_search == n_centroids * 0.75:
+            results[n_centroids]["centroids75"]["querying_cost"].append(
+                sum(10 * x * LAMBDA_GB_SECOND * 8 for x in map_times)
+                + sum(10 * x * LAMBDA_GB_SECOND * 2 for x in data["reduce_queries_times"][0])
+            )
+        elif num_centroids_search == n_centroids * 0.5:
+            results[n_centroids]["centroids50"]["querying_cost"].append(
+                sum(10 * x * LAMBDA_GB_SECOND * 8 for x in map_times)
+                + sum(10 * x * LAMBDA_GB_SECOND * 2 for x in data["reduce_queries_times"][0])
+            )
+        elif num_centroids_search == n_centroids * 0.25:
+            results[n_centroids]["centroids25"]["querying_cost"].append(
+                sum(10 * x * LAMBDA_GB_SECOND * 8 for x in map_times)
+                + sum(10 * x * LAMBDA_GB_SECOND * 2 for x in data["reduce_queries_times"][0])
+            )
+        else:
+            continue
+
 
 directory = f"../results/deep/blocks/indexing/"
 for filename in os.listdir(directory):
@@ -107,29 +127,33 @@ for filename in os.listdir(directory):
 def prepare_cost_data(results):
     cost_data = {
         "blocks": {"indexing": {}, "querying": {}},
-        "centroids": {"indexing": {}, "querying": {}},
-        "n_partitions": [16, 32, 64, 128]
+        "centroids100": {"indexing": {}, "querying": {}},
+        "centroids75": {"indexing": {}, "querying": {}},
+        "centroids50": {"indexing": {}, "querying": {}},
+        "centroids25": {"indexing": {}, "querying": {}},
+        "n_partitions": [16, 32, 64, 128],
     }
-    
+
     for p in cost_data["n_partitions"]:
-        for impl in ["blocks", "centroids"]:
+        for impl in ["centroids100", "centroids75", "centroids50", "centroids25", "blocks"]:
             # Indexing costs
             indexing_costs = results[p][impl]["indexing_cost"]
             indexing_mean = np.mean(indexing_costs) if indexing_costs else 0
             cost_data[impl]["indexing"][p] = indexing_mean
-            
+
             # Querying costs
             querying_costs = results[p][impl]["querying_cost"]
             querying_mean = np.mean(querying_costs) if querying_costs else 0
             cost_data[impl]["querying"][p] = querying_mean
-    
+
     return cost_data
+
 
 # Prepare the data
 cost_data = prepare_cost_data(results)
 
 # Create a single plot
-fig, ax = plt.subplots(figsize=(3.33, 1.75))
+fig, ax = plt.subplots(figsize=(3.33, 1.5))
 
 # Set up the X-axis (n_partitions)
 n_partitions = cost_data["n_partitions"]
@@ -137,45 +161,76 @@ x = np.arange(len(n_partitions))
 bar_width = 0.35  # Width of each bar, adjusted to fit two bars side by side
 
 # Plot indexing costs as bars
-centroids_indexing = ax.bar(
-    x - bar_width/2,
-    [cost_data["centroids"]["indexing"][p] for p in n_partitions],
-    bar_width,
-    label="Partitioning (Centroids)",
-    alpha=0.9,
-    color="#ef8a62"
-)
 blocks_indexing = ax.bar(
-    x + bar_width/2,
+    x + bar_width / 2,
     [cost_data["blocks"]["indexing"][p] for p in n_partitions],
     bar_width,
-    label="Partitioning (Blocks)",
-    alpha=0.9,
-    color="#b2182b"
+    label="Blocks",
+    alpha=0.7,
+    # color="#b2182b",
+)
+centroids_indexing = ax.bar(
+    x - bar_width / 2,
+    [cost_data["centroids100"]["indexing"][p] for p in n_partitions],
+    bar_width,
+    label="Clustering",
+    alpha=0.7,
+    # color="#ef8a62",
 )
 
 # Plot querying costs as lines with markers
-centroids_querying = ax.plot(
-    x,
-    [cost_data["centroids"]["querying"][p] for p in n_partitions],
-    markersize=3,
-    linestyle="-",
-    label="Querying (Centroids)",
-    linewidth=1,
-    color="#67a9cf"
-)
 blocks_querying = ax.plot(
     x,
     [cost_data["blocks"]["querying"][p] for p in n_partitions],
+    marker="o",
+    markersize=3,
+    linestyle="-",
+    label="Blocks",
+    linewidth=1,
+    # color="#2166ac",
+)
+centroids_querying = ax.plot(
+    x,
+    [cost_data["centroids100"]["querying"][p] for p in n_partitions],
+    marker="x",
     markersize=3,
     linestyle="--",
-    label="Querying (Blocks)",
+    label="Clustering 100%",
     linewidth=1,
-    color="#2166ac"
+    # color="#67a9cf",
+)
+# centroids_querying75 = ax.plot(
+#     x,
+#     [cost_data["centroids75"]["querying"][p] for p in n_partitions],
+#     markersize=3,
+#     linestyle=":",
+#     label="Clustering 75%",
+#     linewidth=1,
+#     # color="#67a9cf",
+# )
+centroids_querying50 = ax.plot(
+    x,
+    [cost_data["centroids50"]["querying"][p] for p in n_partitions],
+    marker="v",
+    markersize=3,
+    linestyle="-.",
+    label="Clustering 50%",
+    linewidth=1,
+    # color="#67a9cf",
+)
+centroids_querying25 = ax.plot(
+    x,
+    [cost_data["centroids25"]["querying"][p] for p in n_partitions],
+    marker="^",
+    markersize=3,
+    linestyle=":",
+    label="Clustering 25%",
+    linewidth=1,
+    # color="#67a9cf",
 )
 
 # Customize the plot
-ax.set_xlabel("Number of Partitions ($N$)")
+ax.set_xlabel("Num. Partitions ($N$)")
 ax.set_ylabel("Cost (USD)")
 ax.set_yscale("log")
 ax.set_xticks(x)
@@ -192,34 +247,58 @@ ax.grid(True, which="minor", axis="y", linestyle="--", alpha=0.25)
 
 # Adjust y-axis limits dynamically
 valid_costs = (
-    [cost_data["centroids"]["indexing"][p] for p in n_partitions] +
-    [cost_data["blocks"]["indexing"][p] for p in n_partitions] +
-    [cost_data["centroids"]["querying"][p] for p in n_partitions] +
-    [cost_data["blocks"]["querying"][p] for p in n_partitions]
+    [cost_data["centroids100"]["indexing"][p] for p in n_partitions]
+    + [cost_data["blocks"]["indexing"][p] for p in n_partitions]
+    + [cost_data["centroids100"]["querying"][p] for p in n_partitions]
+    + [cost_data["blocks"]["querying"][p] for p in n_partitions]
 )
 valid_costs = [cost for cost in valid_costs if cost > 0]
 min_cost = min(valid_costs) if valid_costs else 1e-5
 max_cost = max(valid_costs) if valid_costs else 1
 ax.set_ylim(min_cost * 0.5, max_cost * 2)
 
+ph = plt.plot([], marker="", ls="")[0]  # Canvas
 # Reorder legend: Indexing Blocks, Querying Blocks, Indexing Centroids, Querying Centroids
-handles = [blocks_indexing, centroids_indexing, blocks_querying[0], centroids_querying[0]]
-labels = ["Indexing (Blocks)", "Indexing (Centroids)", "Querying (Blocks)", "Querying (Centroids)"]
-ax.legend(
+handles = [
+    ph,
+    blocks_indexing,
+    centroids_indexing,
+    ph,
+    ph,
+    blocks_querying[0],
+    centroids_querying[0],
+    # centroids_querying75[0],
+    centroids_querying50[0],
+    centroids_querying25[0],
+]
+labels = [
+    "\\textbf{Partitioning:}",
+    "Blocks",
+    "Clustering",
+    "",
+    "\\textbf{Querying:}",
+    "Blocks",
+    "Clustering 100%",
+    # "Clustering 75%",
+    "Clustering 50%",
+    "Clustering 25%",
+]
+fig.legend(
     handles,
     labels,
-    loc="upper center",
-    bbox_to_anchor=(0.5, 1.275),
-    ncol=2,
+    loc="center right",
+    bbox_to_anchor=(1, 0.5),
+    ncol=1,
     frameon=False,
-    labelspacing=0.1,
-    handletextpad=0.2,
-    columnspacing=1,
-    borderpad=0
+    # mode="expand",
+    # labelspacing=0.1,
+    # handletextpad=0.2,
+    # columnspacing=1,
+    # borderpad=0,
 )
 
 # Adjust layout and save
 plt.tight_layout()
-plt.subplots_adjust(top=0.85, bottom=0.2)
+plt.subplots_adjust(top=0.95, bottom=0.25, right=0.6)
 plt.savefig("../plots/blocks_vs_clustering/blocks_clustering_cost_breakdown.pdf")
 plt.close()

@@ -9,6 +9,8 @@ import pylab
 import re
 from pprint import pprint
 from collections import defaultdict
+import pandas as pd
+import seaborn as sns
 
 pylab.switch_backend("Agg")
 mpl.use("pgf")
@@ -51,7 +53,7 @@ plt.rcParams.update(
     }
 )
 
-CAPSIZE = 3
+CAPSIZE = 1
 
 results_dir = os.path.dirname(os.path.dirname(__file__)) + "/results"
 plots_dir = os.path.dirname(os.path.dirname(__file__)) + "/plots/milvus"
@@ -66,9 +68,10 @@ INPUTS = [
     ("gist", "milvus", "GIST1M", "Milvus"),
 ]
 
+
 def parse_milvus_results(dataset):
     milvus_indexing = defaultdict(list)
-    milvus_querying = defaultdict(list)
+    milvus_querying = defaultdict(lambda: defaultdict(list))
 
     for query_functions in [4, 8]:
         directory = f"{results_dir}/{dataset}/milvus{query_functions}qf/"
@@ -83,13 +86,15 @@ def parse_milvus_results(dataset):
                     query_time_pattern = re.findall(r"cost=([\d.]+)s", data)
 
                     milvus_indexing[f"{config}"].extend([float(q) for q in load_time_pattern])
-                    milvus_querying[f"{config}_{query_functions}"].extend([float(q) for q in query_time_pattern])
+                    # milvus_querying[f"{config}_{query_functions}"].extend([float(q) for q in query_time_pattern])
+                    milvus_querying[f"{config}"][f"{query_functions}"].extend([float(q) for q in query_time_pattern])
 
     return milvus_indexing, milvus_querying
 
+
 def parse_blocks_results(dataset, version):
     blocks_indexing = defaultdict(list)
-    blocks_querying = defaultdict(lambda: defaultdict(list))
+    blocks_querying = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
     directory_index = f"{results_dir}/{dataset}/blocks/indexing/"
     directory_query = f"{results_dir}/{dataset}/blocks/querying/"
@@ -103,7 +108,9 @@ def parse_blocks_results(dataset, version):
 
     if os.path.exists(directory_query):
         for filename in os.listdir(directory_query):
-            config = filename.split("_")[-3] + "_" + filename.split("_")[-2]
+            # config = filename.split("_")[-3] + "_" + filename.split("_")[-2]
+            config = filename.split("_")[-3]
+            query_functions = filename.split("_")[-2]
             with open(os.path.join(directory_query, filename), "r") as file:
                 data = json.load(file)
                 total = data["total_querying_times_mean"]
@@ -125,18 +132,19 @@ def parse_blocks_results(dataset, version):
                     total = data["total_querying_times_mean"]
                     query = total - invoke - load_index
                     startup = total - query
-                    blocks_querying[config]["total"].append(total)
-                    blocks_querying[config]["query"].append(query)
-                    blocks_querying[config]["startup"].append(startup)
-                    blocks_querying[config]["invoke"].append(invoke)
-                    blocks_querying[config]["load"].append(load_index)
+                    blocks_querying[config][query_functions]["total"].append(total)
+                    blocks_querying[config][query_functions]["query"].append(query)
+                    blocks_querying[config][query_functions]["startup"].append(startup)
+                    blocks_querying[config][query_functions]["invoke"].append(invoke)
+                    blocks_querying[config][query_functions]["load"].append(load_index)
 
     return blocks_indexing, blocks_querying
 
+
 def plot_indexing(data, dst):
-    fig, axs = plt.subplots(1, 3, figsize=(6.6, 2.0))
+    fig, axs = plt.subplots(1, 3, figsize=(3.33, 1.4))
     handles, labels = None, None
-    
+
     for i, dataset in enumerate(data):
         configs = sorted(
             set().union(data[dataset]["SVDB"]["indexing"].keys(), data[dataset]["Milvus"]["indexing"].keys()),
@@ -173,6 +181,7 @@ def plot_indexing(data, dst):
             ecolor="black",
         )
 
+        axs[i].set_yscale("log")
         axs[i].set_title(f"{dataset}")
         axs[i].grid(True)
         axs[i].set_xticks(x)
@@ -180,91 +189,274 @@ def plot_indexing(data, dst):
         if i == 0:
             axs[i].set_ylabel("Indexing Time (min)")
         if i == 1:
-            axs[i].set_xlabel("Number of Partitions")
+            axs[i].set_xlabel("Num. Partitions ($N$)")
+        if i != 1:
+            axs[i].sharey(axs[1])
+        # axs[i].set_ylim(1, 70)
 
         if i == 0:
             handles, labels = axs[i].get_legend_handles_labels()
 
-    fig.legend(handles, labels, 
-               bbox_to_anchor=(0.5, 1.05),  # Moved higher from 0.98 to 1.05
-               loc="upper center",
-               ncol=2,
-               frameon=False)
-    
+    fig.legend(
+        handles,
+        labels,
+        bbox_to_anchor=(0.5, 1.05),  # Moved higher from 0.98 to 1.05
+        loc="upper center",
+        ncol=2,
+        frameon=False,
+    )
+
     plt.tight_layout()
+    plt.subplots_adjust(top=0.75, bottom=0.25)
     plt.savefig(f"{dst}/milvus_indexing.pdf")
     plt.close()
 
+
 def plot_querying(data, dst):
-    fig, axs = plt.subplots(1, 3, figsize=(6.6, 2.0))
+    fig, axs = plt.subplots(1, 3, figsize=(6.6, 1.8))
     handles, labels = None, None
-    
+
     for i, dataset in enumerate(data):
         configs = sorted(
             set().union(data[dataset]["SVDB"]["querying"].keys(), data[dataset]["Milvus"]["querying"].keys()),
             key=lambda x: tuple(map(int, x.split("_"))),
         )
 
-        milvus_means = np.array([statistics.mean(data[dataset]["Milvus"]["querying"][c]) for c in configs])
-        milvus_sd = np.array([statistics.stdev(data[dataset]["Milvus"]["querying"][c]) for c in configs])
-        blocks_means = np.array([statistics.mean(data[dataset]["SVDB"]["querying"][c]["query"]) for c in configs])
-        blocks_sd = np.array([statistics.stdev(data[dataset]["SVDB"]["querying"][c]["query"]) for c in configs])
-        blocks_tot_sd = np.array([statistics.stdev(data[dataset]["SVDB"]["querying"][c]["total"]) for c in configs])
-        blocks_inv_means = np.array(
-            [statistics.mean(data[dataset]["SVDB"]["querying"][c]["invoke"]) for c in configs]
-        )
-        blocks_load_means = np.array([statistics.mean(data[dataset]["SVDB"]["querying"][c]["load"]) for c in configs])
+        milvus4_means = np.array([statistics.mean(data[dataset]["Milvus"]["querying"][c]["4"]) for c in configs])
+        milvus4_sd = np.array([statistics.stdev(data[dataset]["Milvus"]["querying"][c]["4"]) for c in configs])
+        milvus8_means = np.array([statistics.mean(data[dataset]["Milvus"]["querying"][c]["8"]) for c in configs])
+        milvus8_sd = np.array([statistics.stdev(data[dataset]["Milvus"]["querying"][c]["8"]) for c in configs])
 
+        blocks4_total_means = np.array(
+            [statistics.mean(data[dataset]["SVDB"]["querying"][c]["4"]["total"]) for c in configs]
+        )
+        blocks4_total_sd = np.array(
+            [statistics.stdev(data[dataset]["SVDB"]["querying"][c]["4"]["total"]) for c in configs]
+        )
+        blocks4_query_means = np.array(
+            [statistics.mean(data[dataset]["SVDB"]["querying"][c]["4"]["query"]) for c in configs]
+        )
+        blocks4_query_sd = np.array(
+            [statistics.stdev(data[dataset]["SVDB"]["querying"][c]["4"]["query"]) for c in configs]
+        )
+        blocks4_inv_means = np.array(
+            [statistics.mean(data[dataset]["SVDB"]["querying"][c]["4"]["invoke"]) for c in configs]
+        )
+        blocks4_load_means = np.array(
+            [statistics.mean(data[dataset]["SVDB"]["querying"][c]["4"]["load"]) for c in configs]
+        )
+        blocks8_total_means = np.array(
+            [statistics.mean(data[dataset]["SVDB"]["querying"][c]["8"]["total"]) for c in configs]
+        )
+        blocks8_total_sd = np.array(
+            [statistics.stdev(data[dataset]["SVDB"]["querying"][c]["8"]["total"]) for c in configs]
+        )
+        blocks8_query_means = np.array(
+            [statistics.mean(data[dataset]["SVDB"]["querying"][c]["8"]["query"]) for c in configs]
+        )
+        blocks8_query_sd = np.array(
+            [statistics.stdev(data[dataset]["SVDB"]["querying"][c]["8"]["query"]) for c in configs]
+        )
+        blocks8_inv_means = np.array(
+            [statistics.mean(data[dataset]["SVDB"]["querying"][c]["8"]["invoke"]) for c in configs]
+        )
+        blocks8_load_means = np.array(
+            [statistics.mean(data[dataset]["SVDB"]["querying"][c]["8"]["load"]) for c in configs]
+        )
         x = np.arange(len(configs))
-        width = 0.4
-        milvus_bars = axs[i].bar(x - width / 2, milvus_means, width, label="Milvus")
+        width = 1 / 6
+        milvus4_bars = axs[i].bar(
+            x - 2 * width,
+            milvus4_means,
+            width,
+            label="Milvus",
+            color="#b2182b",
+            edgecolor="black",
+            linewidth=0.3,
+        )
         axs[i].errorbar(
-            x - width / 2,
-            milvus_means,
-            yerr=milvus_sd,
+            x - 2 * width,
+            milvus4_means,
+            yerr=milvus4_sd,
             capsize=CAPSIZE,
             capthick=0.5,
             elinewidth=0.5,
             fmt="none",
             ecolor="black",
         )
-        query_bars = axs[i].bar(x + width / 2, blocks_means, width, label="SVDB: Query")
-        invoke_bars = axs[i].bar(x + width / 2, blocks_inv_means, width, label="SVDB: Invoke", bottom=blocks_means)
-        load_bars = axs[i].bar(
-            x + width / 2, blocks_load_means, width, label="SVDB: Load", bottom=blocks_means + blocks_inv_means
+        milvus8_bars = axs[i].bar(
+            x - width,
+            milvus8_means,
+            width,
+            label="Milvus",
+            color="#b2182b",
+            edgecolor="black",
+            hatch="/////",
+            linewidth=0.3,
         )
         axs[i].errorbar(
-            x + width / 2,
-            blocks_load_means + blocks_means + blocks_inv_means,
-            yerr=blocks_tot_sd,
+            x - width,
+            milvus8_means,
+            yerr=milvus8_sd,
             capsize=CAPSIZE,
             capthick=0.5,
             elinewidth=0.5,
             fmt="none",
             ecolor="black",
         )
+
+        blocks4_inv_bars = axs[i].bar(
+            x + width,
+            blocks4_inv_means,
+            width,
+            bottom=blocks4_query_means + blocks4_load_means,
+            label="Invoke",
+            color="#ef8a62",
+            edgecolor="black",
+            linewidth=0.3,
+        )
+        blocks4_load_bars = axs[i].bar(
+            x + width,
+            blocks4_load_means,
+            width,
+            bottom=blocks4_query_means,
+            label="Load",
+            color="#fddbc7",
+            edgecolor="black",
+            linewidth=0.3,
+        )
+        blocks4_query_bars = axs[i].bar(
+            x + width,
+            blocks4_query_means,
+            width,
+            label="Load",
+            color="#d1e5f0",
+            edgecolor="black",
+            linewidth=0.3,
+        )
+        axs[i].errorbar(
+            x + width,
+            blocks4_total_means,
+            yerr=blocks4_total_sd,
+            capsize=CAPSIZE,
+            capthick=0.5,
+            elinewidth=0.5,
+            fmt="none",
+            ecolor="black",
+        )
+
+        blocks8_inv_bars = axs[i].bar(
+            x + width * 2,
+            blocks8_inv_means,
+            width,
+            bottom=blocks8_query_means + blocks8_load_means,
+            label="Invoke",
+            color="#ef8a62",
+            edgecolor="black",
+            hatch="/////",
+            linewidth=0.3,
+        )
+        blocks8_load_bars = axs[i].bar(
+            x + width * 2,
+            blocks8_load_means,
+            width,
+            bottom=blocks8_query_means,
+            label="Load",
+            color="#fddbc7",
+            edgecolor="black",
+            hatch="/////",
+            linewidth=0.3,
+        )
+        blocks8_query_bars = axs[i].bar(
+            x + width * 2,
+            blocks8_query_means,
+            width,
+            label="Load",
+            color="#d1e5f0",
+            edgecolor="black",
+            hatch="/////",
+            linewidth=0.3,
+        )
+        axs[i].errorbar(
+            x + width * 2,
+            blocks8_total_means,
+            yerr=blocks8_total_sd,
+            capsize=CAPSIZE,
+            capthick=0.5,
+            elinewidth=0.5,
+            fmt="none",
+            ecolor="black",
+        )
+
+        # invoke_bars = axs[i].bar(x + width / 2, blocks_inv_means, width, label="Invoke", bottom=blocks_means + blocks_load_means)
+        # load_bars = axs[i].bar(
+        #     x + width / 2, blocks_load_means, width, label="Load", bottom=blocks_means
+        # )
+        # query_bars = axs[i].bar(x + width / 2, blocks_means, width, label="Query")
+        # axs[i].errorbar(
+        #     x + width / 2,
+        #     blocks_load_means + blocks_means + blocks_inv_means,
+        #     yerr=blocks_tot_sd,
+        #     capsize=CAPSIZE,
+        #     capthick=0.5,
+        #     elinewidth=0.5,
+        #     fmt="none",
+        #     ecolor="black",
+        # )
 
         axs[i].grid(True)
         axs[i].set_title(f"{dataset}")
         axs[i].set_xticks(x)
-        axs[i].set_xticklabels(configs, rotation=45)
+        axs[i].set_xticklabels(configs)
         if i == 0:
             axs[i].set_ylabel("Querying Time (s)")
         if i == 1:
-            axs[i].set_xlabel("Number of Partitions and Query CFs")
+            axs[i].set_xlabel("Num. Partitions ($N$)")
 
         if i == 0:
             handles, labels = axs[i].get_legend_handles_labels()
 
-    fig.legend(handles, labels,
-               bbox_to_anchor=(0.5, 1.05),  # Moved higher from 0.98 to 1.05
-               loc="upper center",
-               ncol=4,
-               frameon=False)
-    
+    ph = plt.plot([], marker="", ls="")[0]  # Canvas
+    conf4 = plt.bar([0], [0], 0, color="w", linewidth=0.3, edgecolor="black")[0]  # Canvas
+    conf8 = plt.bar([0], [0], 0, color="w", linewidth=0.3, edgecolor="black", hatch="/////")[0]  # Canvas
+    handles = [
+        milvus4_bars,
+        ph,
+        blocks4_inv_bars,
+        blocks4_load_bars,
+        blocks4_query_bars,
+        ph,
+        ph,
+        conf4,
+        conf8,
+    ]
+    labels = [
+        "Milvus",
+        "SVDB:",
+        "Invoke",
+        "Data Load",
+        "Index Search",
+        "",
+        "Config:",
+        "\\texttt{4xlarge} / 4 CFs",
+        "\\texttt{8xlarge} / 8 CFs",
+    ]
+
+    fig.legend(
+        handles,
+        labels,
+        bbox_to_anchor=(0.5, 1.05),  # Moved higher from 0.98 to 1.05
+        loc="upper center",
+        ncol=9,
+        frameon=False,
+        columnspacing=0.7,
+    )
+
     plt.tight_layout()
+    plt.subplots_adjust(top=0.82, bottom=0.2)
     plt.savefig(f"{dst}/milvus_querying.pdf")
     plt.close()
+
 
 def main():
     data = {}
@@ -283,6 +475,7 @@ def main():
     pprint(data)
     plot_indexing(data, plots_dir)
     plot_querying(data, plots_dir)
+
 
 if __name__ == "__main__":
     main()

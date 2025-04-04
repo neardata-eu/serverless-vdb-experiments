@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import numpy as np
+# import numpy as np
 import json
 
 import statistics
@@ -12,7 +12,7 @@ import pylab
 # from matplotlib.collections import LineCollection
 
 # import math
-from pprint import pprint
+# from pprint import pprint
 import seaborn as sns
 from collections import defaultdict
 
@@ -136,7 +136,7 @@ def parse_data():
                 for name, time in [
                     ("Invoke", invoke),
                     ("Data Load", load_index),
-                    ("Query", query),
+                    ("Index Search", query),
                     ("Total", total),
                 ]:
                     data["Type"] = name
@@ -155,7 +155,7 @@ def plot_query_times(df, dst):
 
     ax = axs
     data = df
-    impls = df["Implementation"].unique().tolist()
+    # impls = df["Implementation"].unique().tolist()
     types = df["Type"].unique().tolist()
     # datasets.reverse()
 
@@ -195,11 +195,11 @@ def plot_query_times(df, dst):
         )
         ax.grid(True)
         ax.set_title(type)
-        if type in ["Invoke", "Query"]:
+        if type in ["Invoke", "Index Search"]:
             ax.set_ylabel("Time (s)")
         else:
             ax.set_ylabel(None)
-        if type in ["Total", "Query"]:
+        if type in ["Total", "Index Search"]:
             ax.set_xlabel("Num. Partitions ($N$)")
         else:
             ax.set_xlabel(None)
@@ -219,8 +219,6 @@ def plot_query_times(df, dst):
     )
     for ax in axs.flatten():
         ax.get_legend().remove()
-    # axs[0].get_legend().remove()
-    # axs[1].get_legend().remove()
     # axs[0].sharey(axs[1])
 
     pylab.tight_layout()
@@ -236,16 +234,11 @@ def main():
     df = parse_data()
     df.drop(df[df["Num. Functions"] == "8"].index, inplace=True)
     df.drop(df[df["N search"] == 1].index, inplace=True)
-    # df["N search %"] = (df['N search'] / df['$N$'] * 100).astype(int).astype(str) + "%"
     sorter = ["Blocks", "Clustering 100%", "Clustering 75%", "Clustering 50%", "Clustering 25%"]
     df.Name = df.Name.astype("category")
     df.Name = df.Name.cat.set_categories(sorter)
 
     df.sort_values(["Name"])
-    # df["Name"] = df["Implementation"] if df["Implementation"] == "Blocks" else "Clustering"
-    # df = df[df["N search %"] == 100]
-
-    # df["Name"] = df["Implementation"] + " " + df["N search %"].astype(int).astype(str)
     print(df)
     # return
     plot_query_times(df, f"{plots_dir}/querying.pdf")
