@@ -232,16 +232,39 @@ def plot_query_times(df, dst):
 
 def main():
     df = parse_data()
-    df.drop(df[df["Num. Functions"] == "8"].index, inplace=True)
+    df.drop(df[df["Num. Functions"] == 8].index, inplace=True)
     df.drop(df[df["N search"] == 1].index, inplace=True)
     sorter = ["Blocks", "Clustering 100%", "Clustering 75%", "Clustering 50%", "Clustering 25%"]
     df.Name = df.Name.astype("category")
     df.Name = df.Name.cat.set_categories(sorter)
 
-    df.sort_values(["Name"])
-    print(df)
+    df.sort_values(["Name", "$N$"], inplace=True)
     # return
     plot_query_times(df, f"{plots_dir}/querying.pdf")
+    df.drop(df[df["Type"] != "Total"].index, inplace=True)
+    print(df.to_string())
+    clsuter = df[df["implementation"] == "centroids"]
+    clust100 = clsuter[clsuter["N search %"] == 100]
+    clust75 = clsuter[clsuter["N search %"] == 75]
+    clust50 = clsuter[clsuter["N search %"] == 50]
+    clust25 = clsuter[clsuter["N search %"] == 25]
+    blocks = df[df["implementation"] == "blocks"]
+    dif = 1 - blocks["Time"].values / clust100["Time"].values
+    print("blocks to clustering 100%:")
+    print(dif)
+    print(f"Min: {dif.min()} Max: {dif.max()} Mean: {dif.mean()} Std: {dif.std()}")
+    dif = 1 - blocks["Time"].values / clust75["Time"].values
+    print("blocks to clustering 75%:")
+    print(dif)
+    print(f"Min: {dif.min()} Max: {dif.max()} Mean: {dif.mean()} Std: {dif.std()}")
+    dif = 1 - blocks["Time"].values / clust50["Time"].values
+    print("blocks to clustering 50%:")
+    print(dif)
+    print(f"Min: {dif.min()} Max: {dif.max()} Mean: {dif.mean()} Std: {dif.std()}")
+    dif = 1 - blocks["Time"].values / clust25["Time"].values
+    print("blocks to clustering 25%:")
+    print(dif)
+    print(f"Min: {dif.min()} Max: {dif.max()} Mean: {dif.mean()} Std: {dif.std()}")
 
 
 if __name__ == "__main__":

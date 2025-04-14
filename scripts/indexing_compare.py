@@ -218,6 +218,8 @@ def side_by_side_bar_compare(data, dataset_set, config, dst):
     blocks_stdevs = [data[dataset]["Blocks"].get(config, {"stdev": 0})["stdev"] for dataset in datasets]
     clustering_avg = [data[dataset]["Clustering"].get(config, {"mean": 0})["mean"] for dataset in datasets]
     clustering_stdevs = [data[dataset]["Clustering"].get(config, {"stdev": 0})["stdev"] for dataset in datasets]
+    dif = np.array(clustering_avg) / np.array(blocks_avg)
+    print(f"{config}: blocks is {dif}x faster than clustering")
 
     left.bar(
         x - width / 2,
@@ -265,6 +267,9 @@ def side_by_side_bar_compare(data, dataset_set, config, dst):
     blocks_stdevs = [config_data_blocks.get(config, {"stdev": 0})["stdev"] for config in configs]
     clustering_avg = [config_data_clustering.get(config, {"mean": 0})["mean"] for config in configs]
     clustering_stdevs = [config_data_clustering.get(config, {"stdev": 0})["stdev"] for config in configs]
+
+    dif = np.array(clustering_avg) / np.array(blocks_avg)
+    print(f"{dataset_set}: blocks is {dif}x faster than clustering")
 
     right.bar(
         x - width / 2,

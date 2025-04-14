@@ -160,6 +160,11 @@ n_partitions = cost_data["n_partitions"]
 x = np.arange(len(n_partitions))
 bar_width = 0.35  # Width of each bar, adjusted to fit two bars side by side
 
+blocks_cost = np.array([cost_data["blocks"]["indexing"][p] for p in n_partitions])
+centroids_cost = np.array([cost_data["centroids100"]["indexing"][p] for p in n_partitions])
+dif = 1 - np.array(blocks_cost) / np.array(centroids_cost)
+print(f"blocks is {dif}% cheaper than clustering")
+
 # Plot indexing costs as bars
 blocks_indexing = ax.bar(
     x + bar_width / 2,

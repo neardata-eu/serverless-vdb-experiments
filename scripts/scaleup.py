@@ -79,9 +79,9 @@ INPUTS = [
 
 
 def plot_scaleup(data, dst):
-    fig, ax = pylab.subplots(figsize=(3.33, 1.5))
+    fig, ax = pylab.subplots(figsize=(3.33, 1.4))
     x = np.arange(len(data))
-    width = 0.3
+    width = 0.4
     bottom = np.zeros(len(data))
     datasets = list(data.keys())
     stages = list(data[datasets[0]].keys())
@@ -92,15 +92,17 @@ def plot_scaleup(data, dst):
         bottom += values
 
     # ax.set_xlabel("Dataset")
-    ax.set_ylabel("Avg Time (s)")
+    ax.set_ylabel("Querying Time (s)")
     # ax.set_title("Stacked Query Time Breakdown: deep100M 320_80 vs deep 32_8")
     ax.set_xticks(x)
     ax.set_xticklabels(datasets)
+    ax.set_xlim(-0.5, len(datasets) - 0.5)
     # ax.set_ylim(0, 20)
-    ax.legend(bbox_to_anchor=(1, 0.5, 0.25, 1), loc="lower right", mode="expand", borderaxespad=0, ncol=1, frameon=False)
     ax.grid(True)
+    fig.legend(bbox_to_anchor=(1, 0.5), loc="center right", borderaxespad=0, ncol=1, frameon=False)
 
     pylab.tight_layout()
+    pylab.subplots_adjust(right=0.7, bottom=0.13, top=0.98)
     pylab.savefig(dst)
 
 
@@ -141,8 +143,8 @@ def main():
     plot_data = {
         dataset: {
             "Invoke": stage_avg[dataset]["Invoke"],
-            "Load Index": stage_avg[dataset]["download_index"] + stage_avg[dataset]["load_index"],
-            "Query": stage_avg[dataset]["download_queries"]
+            "Data Load": stage_avg[dataset]["download_index"] + stage_avg[dataset]["load_index"],
+            "Index Search": stage_avg[dataset]["download_queries"]
             + stage_avg[dataset]["query_time"]
             + stage_avg[dataset]["reduce_time"],
             "Reduce": stage_avg[dataset]["reduce_iterdata"] + stage_avg[dataset]["final_reduce"],

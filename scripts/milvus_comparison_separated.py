@@ -156,6 +156,9 @@ def plot_indexing(data, dst):
         blocks_means = np.array([statistics.mean(data[dataset]["SVDB"]["indexing"][c]) for c in configs]) / 60
         blocks_sd = np.array([statistics.stdev(data[dataset]["SVDB"]["indexing"][c]) for c in configs]) / 60
 
+        dif = milvus_means / blocks_means
+        print(f"{dataset} indexing: blocks is {dif}x faster than milvus")
+
         x = np.arange(len(configs))
         width = 0.4
         milvus_bars = axs[i].bar(x - width / 2, milvus_means, width, label="Milvus")
@@ -263,6 +266,13 @@ def plot_querying(data, dst):
         blocks8_load_means = np.array(
             [statistics.mean(data[dataset]["SVDB"]["querying"][c]["8"]["load"]) for c in configs]
         )
+
+        dif = blocks4_total_means / milvus4_means
+        dif8 = blocks8_total_means / milvus8_means
+        print(f"{dataset} 4 funcs: milvus is {dif}x faster than blocks")
+        print(f"{dataset} 8 funcs: milvus is {dif8}x faster than blocks")
+
+
         x = np.arange(len(configs))
         width = 1 / 6
         milvus4_bars = axs[i].bar(
