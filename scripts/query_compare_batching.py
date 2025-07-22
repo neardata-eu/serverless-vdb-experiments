@@ -56,7 +56,7 @@ results_dir = os.path.join(base_dir, "results/deep/query_batch")
 plots_dir = os.path.join(base_dir, "plots/blocks_vs_clustering")
 os.makedirs(plots_dir, exist_ok=True)
 
-SIZES = ["5k"]
+SIZES = ["100", "500", "1k", "2.5k", "5k"]
 
 INPUTS = []
 for size in SIZES:
@@ -87,7 +87,7 @@ def parse_data():
                 d = json.load(file)
                 nsearch = d["params"]["num_centroids_search"] if impl == "centroids" else int(nparts)
                 nsearchp = nsearch / int(nparts) * 100
-                if nsearchp != 25:
+                if nsearchp != 25 and impl == "centroids":
                     continue
                 name = pretty_impl if impl == "blocks" else f"{pretty_impl} {int(nsearchp)}%"
                 data = {
@@ -133,8 +133,8 @@ def parse_data():
                 elif impl == "blocks":
                     data_preparation = d["create_map_data"][0]
 
-                #total = total = d["total_querying_times_mean"]
-                total = statistics.mean(stages["total"])
+                total = total = d["total_querying_times_mean"]
+                #total = statistics.mean(stages["total"])
                 #total = d["reduce_queries_times"][0][0]
                 load_data = sum(statistics.mean(stage) for stage in [stages["download_queries"], stages["download_index"], stages["load_index"]])
                 query = sum(statistics.mean(stage) for stage in [stages["query_time"]]) + statistics.mean(stages["reduce_time"])
@@ -144,7 +144,6 @@ def parse_data():
                     ("Data Load", load_data),
                     ("Search", query),
                     ("Total", total),
-                    ("Reduce", statistics.mean(stages["reduce_time"]))
                 ]:
                     data["Type"] = name_section
                     data["Time"] = time
