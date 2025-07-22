@@ -86,13 +86,16 @@ INPUTS = [
 
 def parse_data():
     df = None
+    invoke_stats = []
+
     for dataset, impl, pretty_dataset, pretty_impl in INPUTS:
         if dataset == "deep100k" and impl == "centroids":
-            path = f"{results_dir}/{dataset}/{impl}/0/querying/unbalanced"
+            path = f"{results_dir}/{dataset}/new/{impl}/0/querying/unbalanced"
         elif impl == "blocks":
-            path = f"{results_dir}/{dataset}/{impl}/querying/"
+            path = f"{results_dir}/{dataset}/new/{impl}/querying/"
         else:
-            path = f"{results_dir}/{dataset}/{impl}/0/querying"
+            path = f"{results_dir}/{dataset}/new/{impl}/0/querying"
+
         if not os.path.exists(path):
             print(path)
             continue
@@ -102,8 +105,11 @@ def parse_data():
             nfuncs = filename.split("_")[-2]
             with open(os.path.join(path, filename), "r") as file:
                 d = json.load(file)
+
                 nsearch = d["params"]["num_centroids_search"] if impl == "centroids" else int(nparts)
                 nsearchp = nsearch / int(nparts) * 100
+                name = pretty_impl if impl == "blocks" else f"{pretty_impl} {int(nsearchp)}%"
+
                 data = {
                     "Dataset": pretty_dataset,
                     "dataset": dataset,
@@ -113,9 +119,20 @@ def parse_data():
                     "Num. Functions": int(nfuncs),
                     "N search": nsearch,
                     "N search %": nsearchp,
-                    "Name": pretty_impl if impl == "blocks" else f"{pretty_impl} {int(nsearchp)}%"
+                    "Name": name,
                 }
-                total = d["total_querying_times_mean"]
+
+                # Extract invokes
+                map_invokes = [t for sublist in d.get("map_invoke", [[]]) for t in sublist]
+                reduce_invokes = [t for sublist in d.get("reduce_invoke", [[]]) for t in sublist]
+
+                invoke_stats.append({
+                    "Name": name,
+                    "Size": nparts,
+                    "map_invoke": map_invokes,
+                    "reduce_invoke": reduce_invokes,
+                })
+
                 stages = defaultdict(list)
                 stages["map_iterdata"].append(d["map_iterdata_times"][0])
                 for function in d["map_queries_times"][0]:
@@ -127,19 +144,22 @@ def parse_data():
                 stages["reduce_iterdata"].append(d["reduce_iterdata_times"][0])
                 stages["final_reduce"].append(d["reduce_queries_times"][0][0])
 
-                invoke = total - sum(statistics.mean(stage) for stage in stages.values())
-                load_index = sum(statistics.mean(stage) for stage in [stages["download_index"], stages["load_index"]])
+                if impl == "centroids":
+                    data_preparation = d["shuffle_centroids_times"][0] + d["map_iterdata_times"][0] + d["create_map_data"][0]
+                elif impl == "blocks":
+                    data_preparation = d["create_map_data"][0]
 
                 total = d["total_querying_times_mean"]
-                query = total - invoke - load_index
-                # startup = total - query
-                for name, time in [
-                    ("Invoke", invoke),
-                    ("Data Load", load_index),
-                    ("Index Search", query),
+                load_data = sum(statistics.mean(stage) for stage in [stages["download_queries"], stages["download_index"], stages["load_index"]])
+                query = sum(statistics.mean(stage) for stage in [stages["query_time"]]) + statistics.mean(stages["reduce_time"])
+
+                for name_section, time in [
+                    ("Query Preparation", data_preparation),
+                    ("Data Load", load_data),
+                    ("Search", query),
                     ("Total", total),
                 ]:
-                    data["Type"] = name
+                    data["Type"] = name_section
                     data["Time"] = time
                     # data["Total Time"] = total
                     # data["Query Time"] = query
@@ -147,8 +167,33 @@ def parse_data():
                     # data["Invoke Time"] = invoke
                     # data["Load Index Time"] = load_index
                     df = pd.concat([df, pd.DataFrame(data, index=[0])], ignore_index=True)
-    return df
+    return df, invoke_stats
 
+def print_average_invoke_stats(invoke_stats):
+    grouped = defaultdict(lambda: {"map": [], "reduce": []})
+    all_map = []
+    all_reduce = []
+
+    for entry in invoke_stats:
+        key = (entry["Name"], entry["Size"])
+        grouped[key]["map"].extend(entry["map_invoke"])
+        grouped[key]["reduce"].extend(entry["reduce_invoke"])
+
+        all_map.extend(entry["map_invoke"])
+        all_reduce.extend(entry["reduce_invoke"])
+
+    print("\n=== Aggregated map_invoke and reduce_invoke Stats per (Name, Size) ===")
+    for (name, size), times in grouped.items():
+        def fmt_stats(label, values):
+            return (f"{label}: avg={statistics.mean(values):.4f}, std={statistics.stdev(values) if len(values) > 1 else 0:.4f}")
+
+        print(f"{name} | {size}")
+        print("  " + fmt_stats("map_invoke", times["map"]))
+        print("  " + fmt_stats("reduce_invoke", times["reduce"]))
+
+    print("\n=== Overall Averages ===")
+    print(f"Overall map_invoke avg: {statistics.mean(all_map):.4f}")
+    print(f"Overall reduce_invoke avg: {statistics.mean(all_reduce):.4f}")
 
 def plot_query_times(df, dst):
     fig, axs = pylab.subplots(2, 2, figsize=(3.33, 2.6))
@@ -195,14 +240,9 @@ def plot_query_times(df, dst):
         )
         ax.grid(True)
         ax.set_title(type)
-        if type in ["Invoke", "Index Search"]:
-            ax.set_ylabel("Time (s)")
-        else:
-            ax.set_ylabel(None)
-        if type in ["Total", "Index Search"]:
-            ax.set_xlabel("Num. Partitions ($N$)")
-        else:
-            ax.set_xlabel(None)
+        ax.set_title(type)
+        ax.set_ylabel("Time (s)" if type in ["Query Preparation", "Search"] else None)
+        ax.set_xlabel("Num. Partitions ($N$)" if type in ["Total", "Search"] else None)
 
     h, la = ax.get_legend_handles_labels()
     fig.legend(
@@ -231,7 +271,8 @@ def plot_query_times(df, dst):
 
 
 def main():
-    df = parse_data()
+    df, invoke_stats = parse_data()
+
     df.drop(df[df["Num. Functions"] == 8].index, inplace=True)
     df.drop(df[df["N search"] == 1].index, inplace=True)
     sorter = ["Blocks", "Clustering 100%", "Clustering 75%", "Clustering 50%", "Clustering 25%"]
@@ -239,32 +280,29 @@ def main():
     df.Name = df.Name.cat.set_categories(sorter)
 
     df.sort_values(["Name", "$N$"], inplace=True)
-    # return
+
+    # Print invoke stats
+    print_average_invoke_stats(invoke_stats)
+
+    # Plot
     plot_query_times(df, f"{plots_dir}/querying.pdf")
+
+    # Diff stats
     df.drop(df[df["Type"] != "Total"].index, inplace=True)
     print(df.to_string())
+
     clsuter = df[df["implementation"] == "centroids"]
     clust100 = clsuter[clsuter["N search %"] == 100]
     clust75 = clsuter[clsuter["N search %"] == 75]
     clust50 = clsuter[clsuter["N search %"] == 50]
     clust25 = clsuter[clsuter["N search %"] == 25]
     blocks = df[df["implementation"] == "blocks"]
-    dif = 1 - blocks["Time"].values / clust100["Time"].values
-    print("blocks to clustering 100%:")
-    print(dif)
-    print(f"Min: {dif.min()} Max: {dif.max()} Mean: {dif.mean()} Std: {dif.std()}")
-    dif = 1 - blocks["Time"].values / clust75["Time"].values
-    print("blocks to clustering 75%:")
-    print(dif)
-    print(f"Min: {dif.min()} Max: {dif.max()} Mean: {dif.mean()} Std: {dif.std()}")
-    dif = 1 - blocks["Time"].values / clust50["Time"].values
-    print("blocks to clustering 50%:")
-    print(dif)
-    print(f"Min: {dif.min()} Max: {dif.max()} Mean: {dif.mean()} Std: {dif.std()}")
-    dif = 1 - blocks["Time"].values / clust25["Time"].values
-    print("blocks to clustering 25%:")
-    print(dif)
-    print(f"Min: {dif.min()} Max: {dif.max()} Mean: {dif.mean()} Std: {dif.std()}")
+
+    for clust, label in [(clust100, "100%"), (clust75, "75%"), (clust50, "50%"), (clust25, "25%")]:
+        dif = 1 - blocks["Time"].values / clust["Time"].values
+        print(f"blocks to clustering {label}:")
+        print(dif)
+        print(f"Min: {dif.min()} Max: {dif.max()} Mean: {dif.mean()} Std: {dif.std()}")
 
 
 if __name__ == "__main__":
