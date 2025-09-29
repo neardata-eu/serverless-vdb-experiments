@@ -92,9 +92,9 @@ def parse_data():
         if dataset == "deep100k" and impl == "centroids":
             path = f"{results_dir}/{dataset}/new/{impl}/0/querying/unbalanced"
         elif impl == "blocks":
-            path = f"{results_dir}/{dataset}/new/{impl}/querying/"
+            path = f"{results_dir}/{dataset}/query_batch/5k/{impl}/"
         else:
-            path = f"{results_dir}/{dataset}/new/{impl}/0/querying"
+            path = f"{results_dir}/{dataset}/query_batch/5k/{impl}/"
 
         if not os.path.exists(path):
             print(path)
@@ -134,29 +134,24 @@ def parse_data():
                 })
 
                 stages = defaultdict(list)
-                stages["map_iterdata"].append(d["map_iterdata_times"][0])
                 for function in d["map_queries_times"][0]:
                     stages["download_queries"].append(function[1])
                     stages["download_index"].append(sum(function[2]))
                     stages["load_index"].append(sum(function[3]))
                     stages["query_time"].append(sum(function[4]))
                     stages["reduce_time"].append(function[5])
-                stages["reduce_iterdata"].append(d["reduce_iterdata_times"][0])
-                stages["final_reduce"].append(d["reduce_queries_times"][0][0])
 
-                if impl == "centroids":
-                    data_preparation = d["shuffle_centroids_times"][0] + d["map_iterdata_times"][0] + d["create_map_data"][0]
-                elif impl == "blocks":
-                    data_preparation = d["create_map_data"][0]
+                data_preparation = d["create_map_data"][0]
 
-                total = d["total_querying_times_mean"]
                 load_data = sum(statistics.mean(stage) for stage in [stages["download_queries"], stages["download_index"], stages["load_index"]])
                 query = sum(statistics.mean(stage) for stage in [stages["query_time"]]) + statistics.mean(stages["reduce_time"])
-
+                #total = d["total_querying_times_mean"] - data_preparation - query - load_data - statistics.mean(map_invokes) - d["create_reduce_data"][0] - d["reduce_execution_times"][0]
+                #total = d["total_querying_times_mean"] - data_preparation - max([x[0] for x in d["map_queries_times"][0]]) - statistics.mean(map_invokes) - d["create_reduce_data"][0] - d["reduce_execution_times"][0]
+                total = d["total_querying_times_mean"]
                 for name_section, time in [
                     ("Query Preparation", data_preparation),
                     ("Data Load", load_data),
-                    ("Search", query),
+                    ("Index Search", query),
                     ("Total", total),
                 ]:
                     data["Type"] = name_section
@@ -226,7 +221,7 @@ def plot_query_times(df, dst):
 
     for type, ax in zip(types, axs.flatten()):
         data = df[df["Type"] == type]
-        sns.barplot(
+        barplot = sns.barplot(
             data,
             x="$N$",
             y="Time",
@@ -238,11 +233,21 @@ def plot_query_times(df, dst):
             capsize=CAPSIZE,
             ax=ax,
         )
+        i = 0
+        for container in barplot.containers:
+            barplot.bar_label(
+                container,
+                fmt="%.2f",
+                label_type="edge",
+                fontsize=6,
+                padding=2+i,
+            )
+            i -= 8
         ax.grid(True)
         ax.set_title(type)
         ax.set_title(type)
-        ax.set_ylabel("Time (s)" if type in ["Query Preparation", "Search"] else None)
-        ax.set_xlabel("Num. Partitions ($N$)" if type in ["Total", "Search"] else None)
+        ax.set_ylabel("Time (s)" if type in ["Query Preparation", "Index Search"] else None)
+        ax.set_xlabel("Num. Partitions ($N$)" if type in ["Total", "Index Search"] else None)
 
     h, la = ax.get_legend_handles_labels()
     fig.legend(

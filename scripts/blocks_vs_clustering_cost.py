@@ -70,7 +70,7 @@ for filename in os.listdir(directory):
             + sum(map(lambda x: x * LAMBDA_GB_SECOND * 10, data["generate_index_centroids"]))
         )
 
-directory = f"../results/deep/query_batch/5k/centroids/"
+directory = f"../results/deep/query_batch2/5k/centroids/"
 for filename in os.listdir(directory):
     with open(os.path.join(directory, filename), "r") as file:
         data = json.load(file)
@@ -110,7 +110,7 @@ for filename in os.listdir(directory):
             sum(map(lambda x: x * LAMBDA_GB_SECOND * 10, data["generate_index_blocks"]))
         )
 
-directory = f"../results/deep/query_batch/5k/blocks/"
+directory = f"../results/deep/query_batch2/5k/blocks/"
 for filename in os.listdir(directory):
     with open(os.path.join(directory, filename), "r") as file:
         data = json.load(file)

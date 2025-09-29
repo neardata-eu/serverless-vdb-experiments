@@ -111,7 +111,6 @@ def parse_data():
                 # Timing sections
                 stages = defaultdict(list)
                 for function in d["map_queries_times"][0]:
-                    stages["total"].append(function[0])
                     stages["download_queries"].append(function[1])
                     stages["download_index"].append(sum(function[2]))
                     stages["load_index"].append(sum(function[3]))
@@ -125,15 +124,10 @@ def parse_data():
                     "map_invoke": map_invokes,
                     "reduce_invoke": reduce_invokes#stages["reduce_time"],
                 })
+                
+                data_preparation = d["create_map_data"][0]
 
-
-
-                if impl == "centroids":
-                    data_preparation = d["shuffle_centroids_times"][0] + d["map_iterdata_times"][0] + d["create_map_data"][0]
-                elif impl == "blocks":
-                    data_preparation = d["create_map_data"][0]
-
-                total = total = d["total_querying_times_mean"]
+                total = d["total_querying_times_mean"]
                 #total = statistics.mean(stages["total"])
                 #total = d["reduce_queries_times"][0][0]
                 load_data = sum(statistics.mean(stage) for stage in [stages["download_queries"], stages["download_index"], stages["load_index"]])
@@ -142,7 +136,7 @@ def parse_data():
                 for name_section, time in [
                     ("Query Preparation", data_preparation),
                     ("Data Load", load_data),
-                    ("Search", query),
+                    ("Index Search", query),
                     ("Total", total),
                 ]:
                     data["Type"] = name_section
@@ -184,7 +178,7 @@ def plot_query_times(df, dst):
 
     for type, ax in zip(types, axs.flatten()):
         data = df[df["Type"] == type]
-        sns.barplot(
+        barplot = sns.barplot(
             data,
             x="Size",
             y="Time",
@@ -194,10 +188,21 @@ def plot_query_times(df, dst):
             capsize=CAPSIZE,
             ax=ax,
         )
+        i = 0
+        for container in barplot.containers:
+            barplot.bar_label(
+                container,
+                fmt="%.2f",
+                label_type="edge",
+                fontsize=6,
+                padding=2+i,
+            )
+            i -= 8
+
         ax.grid(True)
         ax.set_title(type)
-        ax.set_ylabel("Time (s)" if type in ["Query Preparation", "Search"] else None)
-        ax.set_xlabel("Query Batch Size" if type in ["Total", "Search"] else None)
+        ax.set_ylabel("Time (s)" if type in ["Query Preparation", "Index Search"] else None)
+        ax.set_xlabel("Query Batch Size" if type in ["Total", "Index Search"] else None)
 
     h, la = ax.get_legend_handles_labels()
     fig.legend(

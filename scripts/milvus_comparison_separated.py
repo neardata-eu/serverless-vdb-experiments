@@ -184,9 +184,29 @@ def plot_indexing(data, dst):
             ecolor="black",
         )
 
+        # Add numerical labels above bars
+        for bar, val in zip(milvus_bars, milvus_means):
+            axs[i].text(
+                bar.get_x() + bar.get_width() / 2,
+                val * 1.1,  # Add spacing above bar
+                f"{val:.2f}",
+                ha="center",
+                va="bottom",
+                fontsize=6,
+            )
+        for bar, val in zip(svdb_bars, blocks_means):
+            axs[i].text(
+                bar.get_x() + bar.get_width() / 2,
+                val * 1.1,
+                f"{val:.2f}",
+                ha="center",
+                va="bottom",
+                fontsize=6,
+            )
+
         axs[i].set_yscale("log")
         axs[i].set_title(f"{dataset}")
-        axs[i].grid(True)
+        axs[i].grid(True, which="both", axis="y")
         axs[i].set_xticks(x)
         axs[i].set_xticklabels(configs)
         if i == 0:
@@ -195,7 +215,6 @@ def plot_indexing(data, dst):
             axs[i].set_xlabel("Num. Partitions ($N$)")
         if i != 1:
             axs[i].sharey(axs[1])
-        # axs[i].set_ylim(1, 70)
 
         if i == 0:
             handles, labels = axs[i].get_legend_handles_labels()
@@ -203,7 +222,7 @@ def plot_indexing(data, dst):
     fig.legend(
         handles,
         labels,
-        bbox_to_anchor=(0.5, 1.05),  # Moved higher from 0.98 to 1.05
+        bbox_to_anchor=(0.5, 1.05),
         loc="upper center",
         ncol=2,
         frameon=False,
@@ -213,6 +232,7 @@ def plot_indexing(data, dst):
     plt.subplots_adjust(top=0.75, bottom=0.25)
     plt.savefig(f"{dst}/milvus_indexing.pdf")
     plt.close()
+
 
 
 def plot_querying(data, dst):
@@ -484,7 +504,7 @@ def main():
 
     pprint(data)
     plot_indexing(data, plots_dir)
-    plot_querying(data, plots_dir)
+    #plot_querying(data, plots_dir)
 
 
 if __name__ == "__main__":
