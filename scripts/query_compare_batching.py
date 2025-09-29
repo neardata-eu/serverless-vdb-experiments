@@ -17,7 +17,7 @@ plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif",
     "pgf.texsystem": "pdflatex",
-    "font.size": 9,
+    "font.size": 8,
     "pgf.preamble": "\n".join([
         r"\usepackage{libertinus}",
         r"\usepackage{newtxmath}",
@@ -172,7 +172,8 @@ def print_average_invoke_stats(invoke_stats):
     print(f"Overall reduce_invoke avg: {statistics.mean(all_reduce):.4f}")
 
 def plot_query_times(df, dst):
-    fig, axs = pylab.subplots(2, 2, figsize=(3.33, 2.66))
+    # fig, axs = pylab.subplots(2, 2, figsize=(3.33, 2.66))
+    fig, axs = pylab.subplots(1, 4, figsize=(5.5, 1.6))
 
     types = df["Type"].unique().tolist()
 
@@ -188,21 +189,21 @@ def plot_query_times(df, dst):
             capsize=CAPSIZE,
             ax=ax,
         )
-        i = 0
-        for container in barplot.containers:
-            barplot.bar_label(
-                container,
-                fmt="%.2f",
-                label_type="edge",
-                fontsize=6,
-                padding=2+i,
-            )
-            i -= 8
+        # i = 0
+        # for container in barplot.containers:
+        #     barplot.bar_label(
+        #         container,
+        #         fmt="%.2f",
+        #         label_type="edge",
+        #         fontsize=6,
+        #         padding=2+i,
+        #     )
+        #     i -= 8
 
         ax.grid(True)
         ax.set_title(type)
-        ax.set_ylabel("Time (s)" if type in ["Query Preparation", "Index Search"] else None)
-        ax.set_xlabel("Query Batch Size" if type in ["Total", "Index Search"] else None)
+        ax.set_ylabel("Time (s)" if type in ["Query Preparation"] else None)
+        ax.set_xlabel("Query Batch Size")
 
     h, la = ax.get_legend_handles_labels()
     fig.legend(
@@ -218,7 +219,7 @@ def plot_query_times(df, dst):
         ax.get_legend().remove()
 
     pylab.tight_layout()
-    pylab.subplots_adjust(top=0.83, bottom=0.15)
+    pylab.subplots_adjust(top=0.78, bottom=0.25)
     pylab.savefig(dst)
 
 def size_to_number(size_str):

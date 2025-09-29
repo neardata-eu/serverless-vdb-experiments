@@ -13,7 +13,7 @@ plt.rcParams.update(
         "text.usetex": True,
         "font.family": "serif",
         "pgf.texsystem": "pdflatex",
-        "font.size": 9,  # footnote/caption size 9pt for paper
+        "font.size": 8,  # footnote/caption size 9pt for paper
         "pgf.preamble": "\n".join(
             [
                 r"\usepackage{libertinus}",
@@ -61,7 +61,8 @@ for r in [0, 1, 2, 5]:
 # Define plot style parameters
 line_styles = ["-", "--", "-.", ":"]
 
-fig, axs = plt.subplots(1, 4, figsize=(7, 1.8))
+# fig, axs = plt.subplots(1, 4, figsize=(7, 1.8))
+fig, axs = plt.subplots(1, 4, figsize=(5.5, 1.8))
 # Create a separate plot for each p value
 for p, ax in zip([16, 32, 64, 128], axs.flatten()):
     # Create a figure
@@ -121,15 +122,15 @@ for p, ax in zip([16, 32, 64, 128], axs.flatten()):
     ax_inset.set_yticks([95, 96, 97, 98, 99])
     ax_inset.set_xticks(x)
     ax_inset.grid(True, linestyle="-", alpha=0.3)
-    ax_inset.set_title("Zoom: 95-99", fontsize=8, pad=2)  # Add a title to the inset
+    ax_inset.set_title("Zoom: 95-99", fontsize=6, pad=2)  # Add a title to the inset
 
     # Adjust font sizes for the inset plot and remove axis labels
-    ax_inset.tick_params(axis="both", labelsize=7)  # Smaller tick label font size
+    ax_inset.tick_params(axis="both", labelsize=6)  # Smaller tick label font size
     ax_inset.set_xlabel("")  # Remove x-axis label
     ax_inset.set_ylabel("")  # Remove y-axis label
 
     # Add a box around the inset plot
-    ax_inset.spines["top"].set_visible(True)
+    # ax_inset.spines["top"].set_visible(True)
     ax_inset.spines["right"].set_visible(True)
 
 

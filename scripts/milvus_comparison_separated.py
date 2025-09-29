@@ -19,7 +19,7 @@ plt.rcParams.update(
         "text.usetex": True,
         "font.family": "serif",
         "pgf.texsystem": "pdflatex",
-        "font.size": 9,
+        "font.size": 8,
         "pgf.preamble": "\n".join(
             [
                 r"\usepackage{libertinus}",
@@ -142,7 +142,8 @@ def parse_blocks_results(dataset, version):
 
 
 def plot_indexing(data, dst):
-    fig, axs = plt.subplots(1, 3, figsize=(3.33, 1.4))
+    # fig, axs = plt.subplots(1, 3, figsize=(3.33, 1.4))
+    fig, axs = plt.subplots(1, 3, figsize=(4, 1.4))
     handles, labels = None, None
 
     for i, dataset in enumerate(data):
@@ -184,29 +185,30 @@ def plot_indexing(data, dst):
             ecolor="black",
         )
 
-        # Add numerical labels above bars
-        for bar, val in zip(milvus_bars, milvus_means):
-            axs[i].text(
-                bar.get_x() + bar.get_width() / 2,
-                val * 1.1,  # Add spacing above bar
-                f"{val:.2f}",
-                ha="center",
-                va="bottom",
-                fontsize=6,
-            )
-        for bar, val in zip(svdb_bars, blocks_means):
-            axs[i].text(
-                bar.get_x() + bar.get_width() / 2,
-                val * 1.1,
-                f"{val:.2f}",
-                ha="center",
-                va="bottom",
-                fontsize=6,
-            )
+        # # Add numerical labels above bars
+        # for bar, val in zip(milvus_bars, milvus_means):
+        #     axs[i].text(
+        #         bar.get_x() + bar.get_width() / 2,
+        #         val * 1.1,  # Add spacing above bar
+        #         f"{val:.2f}",
+        #         ha="center",
+        #         va="bottom",
+        #         fontsize=6,
+        #     )
+        # for bar, val in zip(svdb_bars, blocks_means):
+        #     axs[i].text(
+        #         bar.get_x() + bar.get_width() / 2,
+        #         val * 1.1,
+        #         f"{val:.2f}",
+        #         ha="center",
+        #         va="bottom",
+        #         fontsize=6,
+        #     )
 
         axs[i].set_yscale("log")
         axs[i].set_title(f"{dataset}")
-        axs[i].grid(True, which="both", axis="y")
+        # axs[i].grid(True, which="both", axis="y")
+        axs[i].grid(True)
         axs[i].set_xticks(x)
         axs[i].set_xticklabels(configs)
         if i == 0:
@@ -236,7 +238,8 @@ def plot_indexing(data, dst):
 
 
 def plot_querying(data, dst):
-    fig, axs = plt.subplots(1, 3, figsize=(6.6, 1.8))
+    # fig, axs = plt.subplots(1, 3, figsize=(6.6, 1.8))
+    fig, axs = plt.subplots(1, 3, figsize=(5.5, 1.8))
     handles, labels = None, None
 
     for i, dataset in enumerate(data):
@@ -455,7 +458,7 @@ def plot_querying(data, dst):
         blocks4_inv_bars,
         blocks4_load_bars,
         blocks4_query_bars,
-        ph,
+        # ph,
         ph,
         conf4,
         conf8,
@@ -466,7 +469,7 @@ def plot_querying(data, dst):
         "Invoke",
         "Data Load",
         "Index Search",
-        "",
+        # "",
         "Config:",
         "\\texttt{4xlarge} / 4 CFs",
         "\\texttt{8xlarge} / 8 CFs",
@@ -475,7 +478,7 @@ def plot_querying(data, dst):
     fig.legend(
         handles,
         labels,
-        bbox_to_anchor=(0.5, 1.05),  # Moved higher from 0.98 to 1.05
+        bbox_to_anchor=(0.5, 1.02),  # Moved higher from 0.98 to 1.05
         loc="upper center",
         ncol=9,
         frameon=False,

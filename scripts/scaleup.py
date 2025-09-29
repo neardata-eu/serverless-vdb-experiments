@@ -23,7 +23,7 @@ plt.rcParams.update(
         "text.usetex": True,
         "font.family": "serif",
         "pgf.texsystem": "pdflatex",
-        "font.size": 9,  # footnote/caption size 9pt for paper
+        "font.size": 8,  # footnote/caption size 9pt for paper
         # "font.size": 10,     # caption size 10pt on thesis
         "pgf.preamble": "\n".join(
             [
@@ -79,7 +79,7 @@ INPUTS = [
 
 
 def plot_scaleup(data, dst):
-    fig, ax = pylab.subplots(figsize=(3.33, 1.4))
+    fig, ax = pylab.subplots(figsize=(2.8, 1.2))
     x = np.arange(len(data))
     width = 0.4
     bottom = np.zeros(len(data))

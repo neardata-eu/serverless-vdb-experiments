@@ -17,7 +17,7 @@ plt.rcParams.update(
         "text.usetex": True,
         "font.family": "serif",
         "pgf.texsystem": "pdflatex",
-        "font.size": 9,
+        "font.size": 8,
         "pgf.preamble": "\n".join(
             [
                 r"\usepackage{libertinus}",
@@ -75,7 +75,8 @@ stds_indexing = {k: {x: np.std(v) for x, v in d.items()} for k, d in results_ind
 x_labels = [16, 32, 64]
 x = np.arange(len(x_labels))
 width = 0.35
-fig, axs = plt.subplots(1, 2, figsize=(3.33, 1.4))
+# fig, axs = plt.subplots(1, 2, figsize=(3.33, 1.4))
+fig, axs = plt.subplots(1, 2, figsize=(4, 1.4))
 ax = axs[0]
 
 # Set logarithmic scale

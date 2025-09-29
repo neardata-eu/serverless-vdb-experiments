@@ -22,7 +22,7 @@ plt.rcParams.update(
         "text.usetex": True,
         "font.family": "serif",
         "pgf.texsystem": "pdflatex",
-        "font.size": 9,  # footnote/caption size 9pt for paper
+        "font.size": 8,  # footnote/caption size 9pt for paper
         # "font.size": 10,     # caption size 10pt on thesis
         "pgf.preamble": "\n".join(
             [
@@ -151,7 +151,8 @@ def create_indexing_config_plot(data, config, datasets, dst):
 
 
 def side_by_side_bar_plot(data, impl, dataset, config, dst):
-    fig, axs = plt.subplots(1, 2, figsize=(3.33, 1.4))
+    # fig, axs = plt.subplots(1, 2, figsize=(3.33, 1.4))
+    fig, axs = plt.subplots(1, 2, figsize=(4, 1.4))
     left = axs[0]
     right = axs[1]
 

@@ -14,7 +14,7 @@ plt.rcParams.update(
         "text.usetex": True,
         "font.family": "serif",
         "pgf.texsystem": "pdflatex",
-        "font.size": 9,
+        "font.size": 8,
         "pgf.preamble": "\n".join(
             [
                 r"\usepackage{libertinus}",
@@ -153,7 +153,8 @@ def prepare_cost_data(results):
 cost_data = prepare_cost_data(results)
 
 # Create a single plot
-fig, ax = plt.subplots(figsize=(3.33, 1.5))
+# fig, ax = plt.subplots(figsize=(3.33, 1.5))
+fig, ax = plt.subplots(figsize=(3.33, 1.4))
 
 # Set up the X-axis (n_partitions)
 n_partitions = cost_data["n_partitions"]
